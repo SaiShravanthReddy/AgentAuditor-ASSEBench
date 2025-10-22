@@ -23,6 +23,7 @@
 
 ## 💥 News
 
+- **[2025-10-01]** Our paper is accpeted by NIPS 2025! 🚀
 - **[2025-06-03]** We release the AgentAuditor paper along with dataset! 🚀
 
 
