@@ -20,9 +20,9 @@ from typing import List, Dict
 
 class GPTConfig:
     def __init__(self):
-        self.API_KEY = "sk-XXXX"  # Replace with your actual API key
-        self.API_BASE = "API_ENDPOINT"
-        self.MODEL = "gpt-4o-2024-08-06"
+        self.API_KEY = os.environ.get("AGENTAUDITOR_API_KEY", "sk-XXXX")
+        self.API_BASE = os.environ.get("AGENTAUDITOR_API_BASE", "API_ENDPOINT")
+        self.MODEL = os.environ.get("AGENTAUDITOR_MODEL_DIRECT_EVAL", "gpt-4o-2024-08-06")
         self.TEMPERATURE = 0
         self.TOP_P = 0.7
         self.MAX_RETRIES = 3

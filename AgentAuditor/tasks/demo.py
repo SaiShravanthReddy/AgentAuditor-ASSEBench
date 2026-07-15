@@ -6,9 +6,9 @@ import os
 
 class GPTConfig:
     def __init__(self):
-        self.API_KEY = "sk-xxxx"  # Replace with your actual API key
-        self.API_BASE = "ENDPOINT"
-        self.MODEL = "deepseek-v3-250324"
+        self.API_KEY = os.environ.get("AGENTAUDITOR_API_KEY", "sk-xxxx")
+        self.API_BASE = os.environ.get("AGENTAUDITOR_API_BASE", "ENDPOINT")
+        self.MODEL = os.environ.get("AGENTAUDITOR_MODEL_DEMO", "deepseek-v3-250324")
         self.TEMPERATURE = 0
         self.TOP_P = 0.7
         self.MAX_RETRIES = 15

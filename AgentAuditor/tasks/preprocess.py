@@ -11,11 +11,13 @@ logger = logging.getLogger(__name__)
 
 class GPTConfig:
     def __init__(self):
-        self.API_KEY = "sk-XXXX"  
-        self.API_BASE = "ENDPOINT"  
-        self.MODEL = "gpt-4.1-2025-04-14"     
+        self.API_KEY = os.environ.get("AGENTAUDITOR_API_KEY", "sk-XXXX")
+        self.API_BASE = os.environ.get("AGENTAUDITOR_API_BASE", "ENDPOINT")
+        self.MODEL = os.environ.get("AGENTAUDITOR_MODEL_PREPROCESS", "gpt-4.1-2025-04-14")
         self.TEMPERATURE = 0
-        self.TOP_P = 0
+        # NOTE: top_p=0 is out of range for some OpenAI-compatible servers (e.g. litellm proxies
+        # reject anything outside (0, 1]); 1 is a no-op with temperature=0 already forcing greedy decoding.
+        self.TOP_P = float(os.environ.get("AGENTAUDITOR_TOP_P_PREPROCESS", 1))
         self.MAX_RETRIES = 5
         self.RETRY_DELAY = 10
 
