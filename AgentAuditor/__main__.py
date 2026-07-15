@@ -1,4 +1,11 @@
+import os
 import sys
+
+from dotenv import load_dotenv
+
+# Load AGENTAUDITOR_API_KEY / AGENTAUDITOR_API_BASE / AGENTAUDITOR_MODEL_* from the repo-root
+# .env before any task module (which reads them at GPTConfig() construction time) is imported.
+load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".env"))
 
 dataset_fullname = {
     'rjudge': 'rjudge',
@@ -9,6 +16,9 @@ dataset_fullname = {
     'aj-s': 'AgentJudge-strict',
     'aj-sa': 'AgentJudge-safety',
     'aj-se': 'AgentJudge-security',
+    'cnfinbench-pooled': 'cnfinbench-pooled',
+    'cnfinbench-harmless': 'cnfinbench-harmless',
+    'cnfinbench-harmful': 'cnfinbench-harmful',
 }
 
 if __name__ == "__main__":

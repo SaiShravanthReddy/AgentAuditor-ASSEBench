@@ -7,9 +7,9 @@ from tqdm import tqdm
 
 class GPTConfig:
     def __init__(self):
-        self.API_KEY = "sk-xxxx"  # Replace with your actual API key
-        self.API_BASE = "ENDPOINT"
-        self.MODEL = "gpt-4.1-2025-04-14"
+        self.API_KEY = os.environ.get("AGENTAUDITOR_API_KEY", "sk-xxxx")
+        self.API_BASE = os.environ.get("AGENTAUDITOR_API_BASE", "ENDPOINT")
+        self.MODEL = os.environ.get("AGENTAUDITOR_MODEL_INFER_FIX2", "gpt-4.1-2025-04-14")
         self.TEMPERATURE = 0
         self.TOP_P = 0.7
         self.MAX_RETRIES = 3
