@@ -105,22 +105,39 @@ AgentAuditor-ASSEBench/
 │       ├── eval.py                     # Performance evaluation
 │       ├── direct_eval.py              # Zero-shot baseline evaluation
 │       └── direct_metric.py            # Baseline metrics calculation
-└── 📊 ASSEBench/                       # Benchmark dataset
-    ├── category/                       # Risk categorization
-    │   ├── safety/                     # Safety-related scenarios
-    │   │   ├── f.json                  # Failure cases
-    │   │   ├── r.json                  # Risk cases  
-    │   │   └── s.json                  # Success cases
-    │   └── security/                   # Security-related scenarios
-    │       ├── f.json                  # Failure cases
-    │       ├── r.json                  # Risk cases
-    │       └── s.json                  # Success cases
-    └── dataset/                        # Evaluation datasets
-        ├── AgentJudge-loose.json       # Loose evaluation criteria
-        ├── AgentJudge-safety.json      # Safety-focused evaluation
-        ├── AgentJudge-security.json    # Security-focused evaluation
-        └── AgentJudge-strict.json      # Strict evaluation criteria
+├── 📊 ASSEBench/                       # Benchmark dataset
+│   ├── category/                       # Risk categorization
+│   │   ├── safety/                     # Safety-related scenarios
+│   │   │   ├── f.json                  # Failure cases
+│   │   │   ├── r.json                  # Risk cases  
+│   │   │   └── s.json                  # Success cases
+│   │   └── security/                   # Security-related scenarios
+│   │       ├── f.json                  # Failure cases
+│   │       ├── r.json                  # Risk cases
+│   │       └── s.json                  # Success cases
+│   └── dataset/                        # Evaluation datasets
+│       ├── AgentJudge-loose.json       # Loose evaluation criteria
+│       ├── AgentJudge-safety.json      # Safety-focused evaluation
+│       ├── AgentJudge-security.json    # Security-focused evaluation
+│       └── AgentJudge-strict.json      # Strict evaluation criteria
+├── 🏦 CNFinBench/                      # Benchmark extension: CNFinBench evaluation
+│   ├── RESULTS.md                      # Write-up: setup, validity notes, full results
+│   ├── cnfinbench_to_agentauditor.py   # Converter: CNFinBench schema -> AgentAuditor schema
+│   ├── cnfinbench_metrics.py           # Metrics (accuracy/F1/balanced acc/unsafe recall)
+│   ├── cnfinbench_detect_leakage.py    # Detects few-shot self-leakage in retrieval results
+│   └── data/                           # Raw CNFinBench source data (gitignored, local only)
+└── 🏦 FinVault/                        # Benchmark extension: FinVault evaluation (scaffolded)
+    ├── README.md                       # Structure notes, mirrors CNFinBench/
+    └── data/                           # Raw FinVault source data (gitignored, local only)
 ```
+
+**Extending to a new benchmark:** `CNFinBench/` and `FinVault/` follow the same pattern —
+benchmark-specific conversion/metrics/leak-detection scripts and raw source data live in their
+own top-level folder, while the shared `AgentAuditor/` pipeline underneath is never modified.
+Each benchmark's converted, AgentAuditor-schema datasets and pipeline outputs still live under
+`AgentAuditor/data/` and `AgentAuditor/temp/` respectively (required by the pipeline's own
+hardcoded path structure — see `FinVault/README.md` for why), namespaced by a dataset-key prefix
+(`cnfinbench-*`, `finvault-*`) rather than by physical folder.
 
 
 ## 🧪 Pipeline Overview
