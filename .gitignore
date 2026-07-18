@@ -4,3 +4,4 @@ __pycache__/
 AgentAuditor/temp/
 CNFinBench/data/
 FinVault/data/
+embedding_cache_structured/
