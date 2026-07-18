@@ -11,15 +11,20 @@ AgentAuditor-schema input file (`AgentAuditor/data/<dataset>.json.meta.json`) - 
 needed because AgentAuditor's preprocess stage drops every input field except
 id/profile/contents/label, so run/subset/HICS-score provenance has to be joined back in by id.
 
-Usage:
-    python cnfinbench_metrics.py \
+Usage (run from the repo root):
+    python CNFinBench/cnfinbench_metrics.py \
         --run harmless AgentAuditor/temp/cnfinbench-harmless/output-k3_corrected.json AgentAuditor/data/cnfinbench-harmless.json.meta.json \
         --run harmful  AgentAuditor/temp/cnfinbench-harmful/output-k3_corrected.json  AgentAuditor/data/cnfinbench-harmful.json.meta.json
 
 Or, if you ran the pooled condition as its own AgentAuditor dataset (recommended, since pooling
 changes the FINCH-clustering demo pool too):
-    python cnfinbench_metrics.py \
+    python CNFinBench/cnfinbench_metrics.py \
         --run pooled AgentAuditor/temp/cnfinbench-pooled/output-k3_corrected.json AgentAuditor/data/cnfinbench-pooled.json.meta.json
+
+Add a 4th arg per --run (output of cnfinbench_detect_leakage.py) to exclude genuinely
+self-leaked items:
+    python CNFinBench/cnfinbench_metrics.py \
+        --run pooled AgentAuditor/temp/cnfinbench-pooled/output-k3_corrected.json AgentAuditor/data/cnfinbench-pooled.json.meta.json AgentAuditor/temp/cnfinbench-pooled/leaked_ids.json
 """
 import argparse
 import json

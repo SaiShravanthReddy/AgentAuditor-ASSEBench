@@ -20,8 +20,8 @@ fewshot_demos' Q text. A turn "matches" if a 150-character prefix of its content
 in the demo Q. If >=80% of an item's own turns match within a single demo, that item is flagged as
 genuinely self-leaked.
 
-Usage:
-    python cnfinbench_detect_leakage.py AgentAuditor/temp/<dataset>/k3.json leaked_ids_<name>.json
+Usage (run from the repo root):
+    python CNFinBench/cnfinbench_detect_leakage.py AgentAuditor/temp/<dataset>/k3.json leaked_ids_<name>.json
 """
 import argparse
 import json

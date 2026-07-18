@@ -93,15 +93,18 @@ Audited the prose fallback specifically for negation errors (e.g. "this is **not
 
 ## Reproducing this
 
+Run these from the repo root (paths below are relative to root; the CNFinBench-specific scripts
+now live in `CNFinBench/`, while `AgentAuditor/` stays at the root as shared pipeline infrastructure):
+
 ```
-python cnfinbench_to_agentauditor.py <cnfinbench_file> AgentAuditor/data/<name>.json --run-name <run>
+python CNFinBench/cnfinbench_to_agentauditor.py CNFinBench/data/<cnfinbench_file> AgentAuditor/data/<name>.json --run-name <run>
 python -m AgentAuditor <name> preprocess
 python -m AgentAuditor <name> cluster
 python -m AgentAuditor <name> demo
 python -m AgentAuditor <name> infer_emb
 python -m AgentAuditor <name> infer
-python cnfinbench_detect_leakage.py AgentAuditor/temp/<name>/k3.json AgentAuditor/temp/<name>/leaked_ids.json
-python cnfinbench_metrics.py --run <run> AgentAuditor/temp/<name>/output-k3_corrected.json AgentAuditor/data/<name>.json.meta.json AgentAuditor/temp/<name>/leaked_ids.json
+python CNFinBench/cnfinbench_detect_leakage.py AgentAuditor/temp/<name>/k3.json AgentAuditor/temp/<name>/leaked_ids.json
+python CNFinBench/cnfinbench_metrics.py --run <run> AgentAuditor/temp/<name>/output-k3_corrected.json AgentAuditor/data/<name>.json.meta.json AgentAuditor/temp/<name>/leaked_ids.json
 ```
 
 The 4th argument to `--run` (the leaked-ids file) is what excludes genuinely self-leaked items — omit it to reproduce the (leakage-contaminated) numbers for comparison.
