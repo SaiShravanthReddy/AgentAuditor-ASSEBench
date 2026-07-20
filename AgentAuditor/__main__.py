@@ -19,6 +19,7 @@ dataset_fullname = {
     'cnfinbench-pooled': 'cnfinbench-pooled',
     'cnfinbench-harmless': 'cnfinbench-harmless',
     'cnfinbench-harmful': 'cnfinbench-harmful',
+    'finvault-full': 'finvault-full',
 }
 
 if __name__ == "__main__":
