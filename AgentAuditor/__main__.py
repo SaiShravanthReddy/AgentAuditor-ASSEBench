@@ -19,7 +19,14 @@ dataset_fullname = {
     'cnfinbench-pooled': 'cnfinbench-pooled',
     'cnfinbench-harmless': 'cnfinbench-harmless',
     'cnfinbench-harmful': 'cnfinbench-harmful',
-    'finvault-full': 'finvault-full',
+    # 'finvault-full' (v2-based) is deliberately NOT registered here anymore - its converted file
+    # still had real, technique-revealing case_ids leaking into judge input (see FinVault/README.md
+    # and fix_v3_leakage.py's docstring). Renamed to finvault-full-LEAKY-DO-NOT-USE.json so it fails
+    # loudly (FileNotFoundError) instead of silently producing a leaky baseline if someone still
+    # types the old dataset key. Use finvault-v3-fixed for real runs; if you specifically need the
+    # leaky version for a before/after leakage-impact comparison, add a temporary entry pointing at
+    # 'finvault-full-LEAKY-DO-NOT-USE' rather than restoring this key.
+    'finvault-v3-fixed': 'finvault-v3-fixed',
 }
 
 if __name__ == "__main__":
