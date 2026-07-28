@@ -31,6 +31,10 @@ set -uo pipefail
 DATASET="${1:-finvault-full}"
 TOTAL_RECORDS="${2:-1064}"
 NTFY_TOPIC="${NTFY_TOPIC:-}"
+# HiPerGator's module-loaded venv puts a >=3.10 interpreter at `python`; a local machine's default
+# `python`/`python3` may be older (AgentAuditor/__main__.py needs 3.10+ for match/case) - override
+# via PYTHON_BIN if so, e.g. PYTHON_BIN=/opt/homebrew/bin/python3.11.
+PYTHON_BIN="${PYTHON_BIN:-python}"
 REP_FRACTION="0.10"   # FINCH target_n_clusters = len(data)/10, per AgentAuditor/tasks/cluster.py
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 LOG="${SCRIPT_DIR}/${DATASET}_milestones.log"
@@ -90,7 +94,7 @@ run_stage() {
     local est_minutes="$2"
     log "=== START ${stage} (estimated ~${est_minutes}m) ==="
     local t0=$(date +%s)
-    python -m AgentAuditor "$DATASET" "$stage"
+    "$PYTHON_BIN" -m AgentAuditor "$DATASET" "$stage"
     local status=$?
     local t1=$(date +%s)
     STAGE_ACTUAL_MINUTES=$(python3 -c "print(round((${t1}-${t0})/60, 1))")
