@@ -11,9 +11,11 @@ file matching its own dataset. This is NOT positional filtering (list index) - d
 row_index is an explicit field and using it directly avoids any risk of a record-ordering mismatch
 between this source file and whatever Anirudhh indexed against.
 
-Refuses to run (loudly, not silently) if any source record is missing `row_index` - this exact
-failure mode was found empirically for one CNFinBench condition's local data before this script was
-written; better to fail here than silently do positional filtering against the wrong records.
+Refuses to run (loudly, not silently) if any source record is missing `row_index`, UNLESS `id` can
+be verified to reliably substitute for it (see --derive-row-index-from-id): this exact missing-field
+failure mode was found empirically for CNFinBench harmless's local data before this script was
+written; better to fail here than silently do unverified positional filtering against the wrong
+records.
 
 Usage:
     python CNFinBench/filter_blocked_rows.py <source_evaluation.json> <blocked_rows_dir> <condition> <output.json>
@@ -46,12 +48,52 @@ def load_blocked_sets(blocked_rows_dir, condition):
     return blocked
 
 
+def try_derive_row_index_from_id(records):
+    """Verify `id` can safely substitute for a missing `row_index`: for each subset, ids must be
+    unique and form an exact 1..N sequence with no gaps or duplicates (N = that subset's record
+    count). This is a *verified structural guarantee*, not an assumption about list/file order -
+    confirmed this holds for CNFinBench harmless's local data (and matches the same id=row_index+1
+    relationship independently confirmed on harmful's data, which does have both fields). Mutates
+    records in place, adding 'row_index' = int(id) - 1. Aborts loudly (returns False) rather than
+    guessing if verification fails for any subset."""
+    by_subset = {}
+    for r in records:
+        by_subset.setdefault(r.get("dataset"), []).append(r)
+
+    for subset in SUBSETS:
+        subset_records = by_subset.get(subset, [])
+        if not subset_records:
+            continue
+        try:
+            ids = sorted(int(r["id"]) for r in subset_records)
+        except (KeyError, ValueError):
+            print(f"ERROR: not all {subset} records have a purely-numeric 'id' - cannot derive "
+                  f"row_index from it.", file=sys.stderr)
+            return False
+        expected = list(range(1, len(subset_records) + 1))
+        if ids != expected:
+            print(f"ERROR: {subset} ids are not an exact 1..{len(subset_records)} sequence "
+                  f"(got {len(set(ids))} unique values, range {min(ids)}-{max(ids)}) - cannot "
+                  f"safely derive row_index from id for this subset.", file=sys.stderr)
+            return False
+
+    for r in records:
+        r["row_index"] = int(r["id"]) - 1
+    print("Verified: ids form an exact 1..N sequence per subset with no gaps/duplicates - "
+          "derived row_index = int(id) - 1 for all records.")
+    return True
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("source", help="Path to source evaluation.json (must have row_index + dataset fields)")
     parser.add_argument("blocked_rows_dir", help="Directory containing the 6 *_blocked_rows.json files")
     parser.add_argument("condition", choices=["harmful", "harmless"])
     parser.add_argument("output", help="Path to write the filtered evaluation.json")
+    parser.add_argument("--derive-row-index-from-id", action="store_true",
+                         help="If row_index is missing, derive it from id (int(id)-1) - only "
+                              "proceeds if ids are verified to form an exact 1..N sequence per "
+                              "subset with no gaps/duplicates; aborts otherwise.")
     args = parser.parse_args()
 
     with open(args.source, "r", encoding="utf-8") as f:
@@ -62,11 +104,17 @@ def main():
 
     missing_row_index = [r.get("id", "?") for r in records if "row_index" not in r]
     if missing_row_index:
-        print(f"ERROR: {len(missing_row_index)}/{len(records)} records in {args.source} are missing "
-              f"'row_index' - refusing to filter, since that would require unreliable positional "
-              f"matching instead. Fetch a source file that has this field for every record. "
-              f"Example missing ids: {missing_row_index[:5]}", file=sys.stderr)
-        sys.exit(1)
+        if not args.derive_row_index_from_id:
+            print(f"ERROR: {len(missing_row_index)}/{len(records)} records in {args.source} are "
+                  f"missing 'row_index' - refusing to filter, since that would require unreliable "
+                  f"positional matching instead. Pass --derive-row-index-from-id to attempt a "
+                  f"verified id-based derivation instead, or fetch a source file that already has "
+                  f"this field. Example missing ids: {missing_row_index[:5]}", file=sys.stderr)
+            sys.exit(1)
+        if not try_derive_row_index_from_id(records):
+            print("ERROR: --derive-row-index-from-id verification failed - see above. Not filtering.",
+                  file=sys.stderr)
+            sys.exit(1)
 
     unknown_subset = [r.get("id", "?") for r in records if r.get("dataset") not in SUBSETS]
     if unknown_subset:
