@@ -6,6 +6,7 @@ import shutil
 from typing import List, Dict, Any, Tuple, Optional
 from heapq import nlargest
 import logging
+import sys
 import torch
 import torch.nn.functional as F
 from sentence_transformers import SentenceTransformer
@@ -649,6 +650,30 @@ class EmbeddingProcessor:
                     logger.info(f"Processed {processed_count}/{len(data2)} query items... (Skipped: {skipped_items})")
 
             logger.info(f"Finished processing {processed_count} query items. Total skipped: {skipped_items}.")
+
+            # --- Sanity check: refuse to silently write a degenerate (near-)zero-shot dataset ---
+            # This is the exact failure mode that let a stale cross-dataset embedding cache collision
+            # silently collapse few-shot retrieval to 0 demos for 100% of records in multiple prior
+            # runs (cnfinbench-harmful, the first finvault-v3-fixed run) - no exception was raised
+            # anywhere, the pipeline just quietly produced a zero-shot judge while claiming to be
+            # AgentAuditor's memory-augmented one. Fail loudly here instead of writing that file.
+            zero_demo_count = sum(1 for item in output_data if not item.get('fewshot_demos'))
+            zero_demo_frac = zero_demo_count / len(output_data) if output_data else 0
+            if zero_demo_frac >= 0.5:
+                logger.error(
+                    f"ABORTING: {zero_demo_count}/{len(output_data)} ({100*zero_demo_frac:.1f}%) "
+                    f"records got zero fewshot_demos - this pipeline would silently run as a "
+                    f"(near-)zero-shot judge instead of AgentAuditor's intended memory-augmented one. "
+                    f"Common cause: a stale/cross-dataset embedding cache in {self.cache_dir} - try "
+                    f"deleting the cache files for this dataset and re-running. Not writing {output_path}."
+                )
+                sys.exit(1)
+            elif zero_demo_frac > 0.05:
+                logger.warning(
+                    f"{zero_demo_count}/{len(output_data)} ({100*zero_demo_frac:.1f}%) records got "
+                    f"zero fewshot_demos - below the abort threshold but worth checking manually "
+                    f"before trusting downstream results."
+                )
 
             # --- Save Final Dataset ---
             logger.info(f"Saving {len(output_data)} items to {output_path}")
