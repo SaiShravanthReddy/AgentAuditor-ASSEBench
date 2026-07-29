@@ -7,3 +7,11 @@ FinVault/data/
 embedding_cache_structured/
 HIPERGATOR.md
 CLAUDE.md
+# FinVault converted/derived datasets - large, regenerated locally via
+# FinVault/finvault_to_agentauditor.py and FinVault/build_comparison_variants.py, copied to
+# HiPerGator directly rather than through git. Covers both the main .json and its .meta.json
+# sidecar (which also ends in .json).
+AgentAuditor/data/finvault*.json
+# Local pipeline run artifacts (milestone/stdout logs from FinVault/run_finvault_pipeline.sh)
+finvault-*_milestones.log
+finvault-*_run_stdout.log

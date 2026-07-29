@@ -81,10 +81,24 @@ class EmbeddingProcessor:
                  return model_name_init.replace('/', '_')
 
     def _get_cache_path(self, file_path: str) -> Path:
-        """Generates the cache file path based on the input file and model config."""
-        file_name = Path(file_path).stem
+        """Generates the cache file path based on the input file and model config.
+
+        Must be dataset-qualified, not just the bare filename: every dataset's demo pool and query
+        files are both named identically (demo_fixed.json / <dataset>.json under a shared
+        temp/<dataset>/ layout), so using only Path(file_path).stem collides across datasets that
+        share this single repo-root embedding_cache_structured/ directory - verified this caused a
+        real bug: a stale demo_fixed_embeddings_*.pkl from the first-ever dataset run was silently
+        reused by every later dataset, making infer_emb return that OTHER dataset's ids from
+        similarity search (which then never matched the current dataset's own raw reference data),
+        collapsing few-shot retrieval to 0 demos for 100% of records with no error raised. Including
+        the parent directory name (the dataset key, e.g. "finvault-v3-fixed" from
+        ".../temp/finvault-v3-fixed/demo_fixed.json") in the cache key prevents this collision.
+        """
+        file_path_obj = Path(file_path)
+        dataset_qualifier = file_path_obj.parent.name or "unknown_dataset"
+        file_name = file_path_obj.stem
         dim_suffix = f"_dim{self.matryoshka_dim}" if self.matryoshka_dim else "_fulldim"
-        return self.cache_dir / f"{file_name}_embeddings_{self._model_cache_name}{dim_suffix}.pkl"
+        return self.cache_dir / f"{dataset_qualifier}_{file_name}_embeddings_{self._model_cache_name}{dim_suffix}.pkl"
 
     def _cleanup_cache(self):
         """Removes the cache directory if it exists."""
