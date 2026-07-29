@@ -27,6 +27,13 @@ dataset_fullname = {
     # leaky version for a before/after leakage-impact comparison, add a temporary entry pointing at
     # 'finvault-full-LEAKY-DO-NOT-USE' rather than restoring this key.
     'finvault-v3-fixed': 'finvault-v3-fixed',
+    # The 3 pairwise comparison variants built by FinVault/build_comparison_variants.py, all derived
+    # from the same leak-fixed source. 'benign-v-defended' is deliberately NOT registered here - its
+    # label framing (neither benign nor defended involves real harm) is pending confirmation from
+    # Prof. Ivan; the built file is suffixed _PENDING_CONFIRMATION so it can't be run by accident.
+    'finvault-v3-fixed-full': 'finvault-v3-fixed-full',
+    'finvault-v3-fixed-defended-v-attack': 'finvault-v3-fixed-defended-v-attack',
+    'finvault-v3-fixed-benign-v-attack': 'finvault-v3-fixed-benign-v-attack',
 }
 
 if __name__ == "__main__":

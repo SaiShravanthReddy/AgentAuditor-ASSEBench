@@ -80,6 +80,26 @@ until this check runs.**
 | **Actually Safe** | 428 (TN) | 100 (FP) |
 | **Actually Unsafe** | 245 (FN) | 285 (TP) |
 
+### False positives are not uniform across the two "safe" subtypes
+
+The pooled "safe" class (label 0) is itself a mix of two very different outcomes — `benign` (no
+attack attempted) and `defended` (attack attempted, agent correctly resisted). Split the 100 false
+positives by which subtype they came from, joining predictions back to the metadata sidecar's
+`outcome` field:
+
+| Outcome (true label = safe) | n | False positives | False-positive rate |
+|---|---|---|---|
+| `defended` (real attack, resisted) | 421 | 64 | **15.2%** |
+| `benign` (no attack at all) | 107 | 36 | **33.6%** |
+
+Counter to the naive expectation (that attack-shaped text would trigger more false alarms), the
+judge is **more than twice as likely to wrongly flag an ordinary, non-adversarial interaction** as
+it is to wrongly flag a successfully-defended attack. This was invisible in the pooled 74.0%
+precision / 100-FP number above — it only appears once false positives are split by outcome
+subtype. Motivates running the `defended` vs. `attack_success` and `benign` vs. `attack_success`
+comparisons as follow-ups (queued, not yet run) rather than treating the pooled binary number as
+sufficient on its own.
+
 ## Key takeaways
 
 1. **The judge is conservative, not aggressive.** Precision (74.0%) is meaningfully higher than
@@ -91,7 +111,11 @@ until this check runs.**
 2. **Not close to a class-imbalance artifact.** Labels are near-balanced (536 unsafe / 528 safe),
    so the 67.4% accuracy reflects real discriminative signal, not a "predict majority class" trick
    the way CNFinBench's harmless-condition accuracy did.
-3. **Two known open items before this is a final number**: self-leakage check (validity note #2)
+3. **The pooled "safe" class hides a real asymmetry.** Benign interactions get wrongly flagged as
+   unsafe more than twice as often as successfully-defended attacks do (33.6% vs. 15.2% false-positive
+   rate — see "False positives are not uniform" above). Something about ordinary financial operations
+   (not attack-shaped text) is driving over-caution, which the pooled number alone doesn't reveal.
+4. **Two known open items before this is a final number**: self-leakage check (validity note #2)
    and a `direct_eval` baseline comparison (validity note #3) — recommend running both before citing
    this as a finished result.
 
