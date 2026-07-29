@@ -19,6 +19,12 @@ dataset_fullname = {
     'cnfinbench-pooled': 'cnfinbench-pooled',
     'cnfinbench-harmless': 'cnfinbench-harmless',
     'cnfinbench-harmful': 'cnfinbench-harmful',
+    # Guardrail-filtered variants (excludes conversations Anirudhh identified as blocked by the
+    # target model's own guardrails, per CNFinBench/filter_blocked_rows.py) - for Ivan's Citibank
+    # presentation. 'cnfinbench-harmless-unblocked' is NOT registered yet - blocked pending
+    # resolving why the local harmless source data is missing the row_index field the filter
+    # requires (see CNFinBench/README.md's guardrail-filtering note).
+    'cnfinbench-harmful-unblocked': 'cnfinbench-harmful-unblocked',
     # 'finvault-full' (v2-based) is deliberately NOT registered here anymore - its converted file
     # still had real, technique-revealing case_ids leaking into judge input (see FinVault/README.md
     # and fix_v3_leakage.py's docstring). Renamed to finvault-full-LEAKY-DO-NOT-USE.json so it fails
