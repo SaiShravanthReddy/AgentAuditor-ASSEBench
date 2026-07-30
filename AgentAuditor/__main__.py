@@ -83,8 +83,16 @@ if __name__ == "__main__":
             from .tasks.eval import eval_main
             eval_main(dataset)
         case 'direct_eval':
+            # Was wrongly calling direct_metric_main (metrics-only, reads an already-existing
+            # output file) with 2 args when it only accepts 1 - direct_eval_main (the actual
+            # zero-shot LLM-querying stage, in direct_eval.py) was never being called at all, so
+            # this crashed with a TypeError before ever reaching the LLM. Fixed: run the querying
+            # stage first, then compute metrics on its output, mirroring every other multi-step
+            # case above (e.g. 'demo').
+            from .tasks.direct_eval import direct_eval_main
             from .tasks.direct_metric import direct_metric_main
-            direct_metric_main(dataset, dataset_fullname[dataset])
+            direct_eval_main(dataset, dataset_fullname[dataset])
+            direct_metric_main(dataset)
         case 'direct_metric':
             from .tasks.direct_metric import direct_metric_main
             direct_metric_main(dataset)
