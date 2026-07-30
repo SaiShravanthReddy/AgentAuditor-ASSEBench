@@ -15,3 +15,6 @@ AgentAuditor/data/finvault*.json
 # Local pipeline run artifacts (milestone/stdout logs from FinVault/run_finvault_pipeline.sh)
 finvault-*_milestones.log
 finvault-*_run_stdout.log
+# direct_eval's own output + diskcache directories (regenerated locally, not meant for git)
+AgentAuditor/direct_temp/
+cache/
