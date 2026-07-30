@@ -14,6 +14,15 @@ from tqdm import tqdm
 import diskcache as dc
 from tabulate import tabulate
 from jsonschema import validate
+
+# Python 3.11 removed asyncio.coroutine; the `ratelimiter` package still calls it at class-definition
+# time (`__aexit__ = asyncio.coroutine(__exit__)`), so the bare import crashes on 3.11+ even though
+# this file only ever uses RateLimiter synchronously (`with rate_limiter:`, never `async with`) - the
+# broken __aexit__ path is never actually invoked. Shim restores just enough of the removed API (a
+# no-op decorator) to let the import succeed; doesn't change any actual rate-limiting behavior.
+import asyncio
+if not hasattr(asyncio, "coroutine"):
+    asyncio.coroutine = lambda func: func
 from ratelimiter import RateLimiter
 from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
 from typing import List, Dict
