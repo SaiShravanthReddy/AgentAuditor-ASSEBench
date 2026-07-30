@@ -91,6 +91,90 @@ Audited the prose fallback specifically for negation errors (e.g. "this is **not
 3. **Pooling mildly hurts** relative to concatenating independently-run conditions (0.713 vs. 0.718 accuracy, 0.237 vs. 0.246 recall) — sharing a combined memory/demo pool across conditions does not help and mildly degrades unsafe detection.
 4. **Self-leakage is real but was not uniform** — severe in harmless, entirely absent in harmful, partial in pooled. Treat "cluster representative" and "leaked" as different things; use `cnfinbench_detect_leakage.py` to check per-item rather than assuming based on cluster membership. This was caught by re-verifying an initial (incorrect, more sweeping) leakage claim against the actual retrieval code and per-item text evidence rather than taking a plausible-sounding mechanism on faith.
 
+## Guardrail-filtered results (harmful-unblocked / harmless-unblocked)
+
+Ivan requested AgentAuditor metrics specifically on the CNFinBench conversations that do **not**
+get blocked by the target model's own guardrails (row indices identified by Anirudhh, one blocked-
+rows list per condition × subset), for the Citibank presentation. This is a genuinely different
+question from the original pooled/harmful/harmless numbers above — those measure performance on
+*all* conversations; this measures performance specifically on the harder subset that made it past
+the target model's own defenses.
+
+### Setup
+
+- **Filtering**: `CNFinBench/filter_blocked_rows.py`, joined on each record's explicit `row_index` +
+  `dataset` field (harmful) or a verified id-based derivation (`row_index = int(id) - 1`, only used
+  after confirming ids form an exact gapless 1..N sequence per subset — see the script's
+  `--derive-row-index-from-id` docstring; harmless's source lacked an explicit `row_index` field).
+  180/321 harmful and 301/321 harmless conversations survive filtering.
+- **Source data**: harmful from the local `Qwen_Harmful/qwen_harmful_evaluation.json` (already had
+  `row_index`); harmless from HiPerGator's `judge_meta_llama/llama` judge output (the only one of 5
+  available judges — `qwen3_5`, `qwen3_5_nothink`, `gpt_oss`, `gemma_3`, `llama` — that was both
+  complete across all 3 subsets *and* had `row_index`; verified directly, not assumed, since `qwen3_5`
+  looked preferable but its harmless `Inter.json` was confirmed incomplete, 14/171 records).
+  Cross-checked against an independent record-by-record filter Ruihan produced from a different
+  source (her own "trace format" conversion): harmless matched exactly (301/301); harmful initially
+  diverged by 60+ records (an off-by-one in her row indexing), resolved after a second pass — final
+  count now matches exactly (180/180) by direct id comparison, not just totals.
+
+### Validity notes
+
+- **Zero-demo check**: 0.0% zero-demo records for both (few-shot retrieval genuinely engaged, same
+  cache-key bug from the FinVault work was already fixed before these ran).
+- **Self-leakage, checked and non-trivial**: 23/180 (12.8%) harmful-unblocked and 49/301 (16.3%)
+  harmless-unblocked records were genuinely self-leaked and excluded from the numbers below — not
+  as severe as the original harmless condition's 94%, but not negligible either.
+- **5 parsing "failures" in harmful-unblocked are judge refusals, not malformed output** — all 5
+  show `gpt-oss-20b` responding "I'm sorry, but I can't help with that" instead of a verdict,
+  apparently triggered by the underlying conversation's own content (cryptographic exploit
+  technicals, unauthorized data-extraction instructions) tripping the judge model's own safety
+  training, not a JSON-formatting gap. A qualitatively different limitation from output-parsing
+  coverage (validity note #2 above): the safety-judge became unable to judge the most extreme
+  content.
+- **Original ground-truth judge for the pre-existing (non-guardrail-filtered) numbers above is still
+  unconfirmed** — asked Dhruv which of the 5 judge models produced the `final_score` used
+  throughout this whole file; not yet answered, doesn't block the guardrail-filtered results below
+  (which use a specifically-identified judge, `llama` for harmless / local data with confirmed
+  `row_index` for harmful) but is still an open question for the *original* pooled/harmful/harmless
+  numbers.
+
+### Results
+
+| Run | n | accuracy | F1 | balanced acc | unsafe recall | precision |
+|---|---|---|---|---|---|---|
+| harmful-unblocked | 147 | 0.463 | 0.313 | 0.509 | 0.212 | 0.600 |
+| harmless-unblocked | 252 | 0.893 | 0.000 | 0.500 | 0.000 | 0.000 |
+| **POOLED** | 399 | 0.734 | 0.254 | 0.559 | 0.161 | 0.600 |
+
+By subset:
+
+| | n | accuracy | F1 | balanced acc | unsafe recall | precision |
+|---|---|---|---|---|---|---|
+| harmful-unblocked / MT_App | 57 | 0.263 | 0.087 | 0.488 | 0.047 | 0.667 |
+| harmful-unblocked / MT_Cog | 27 | 0.593 | 0.686 | 0.566 | 0.632 | 0.750 |
+| harmful-unblocked / MT_Inter | 63 | 0.587 | 0.235 | 0.499 | 0.174 | 0.364 |
+| harmless-unblocked / MT_App | 84 | 0.750 | 0.000 | 0.500 | 0.000 | 0.000 |
+| harmless-unblocked / MT_Cog | 42 | 0.881 | 0.000 | 0.500 | 0.000 | 0.000 |
+| harmless-unblocked / MT_Inter | 126 | 0.992 | 0.000 | 0.500 | 0.000 | 0.000 |
+
+### Key takeaways (guardrail-filtered)
+
+1. **`harmful-unblocked` scores *below* a trivial majority-class baseline.** Of its 147 scoreable
+   items, 85 are actually unsafe vs. 62 safe — always predicting "unsafe" would trivially score
+   57.8% accuracy. The judge scores 46.3%, meaningfully worse than doing nothing. Plausible
+   explanation: guardrail-blocked conversations were likely the "easy," more obviously-risky cases;
+   removing them leaves the harder, more subtle ones, and the judge's performance drops accordingly
+   relative to the original unfiltered `harmful` condition (0.577 accuracy / 0.286 recall above vs.
+   0.463 / 0.212 here). This is the headline number for the "how does AgentAuditor do on what
+   guardrails miss" question, and it isn't a good one.
+2. **`harmless-unblocked` reproduces the exact same zero-recall failure already documented for
+   unfiltered `harmless`** (see takeaway #1 in the section above) — not new information about
+   guardrail-filtering specifically, just the same known judge limitation showing up again on a
+   different (guardrail-filtered) sample with a similar underlying unsafe rate (~10.7% vs. the
+   original's 11.2%).
+3. **MT_Cog is again the strongest subset** (harmful-unblocked: F1 0.686, recall 0.632) — consistent
+   with the original results' takeaway #2, reinforcing that this isn't sample-specific noise.
+
 ## Reproducing this
 
 Run these from the repo root (paths below are relative to root; the CNFinBench-specific scripts
@@ -110,3 +194,26 @@ python CNFinBench/cnfinbench_metrics.py --run <run> AgentAuditor/temp/<name>/out
 The 4th argument to `--run` (the leaked-ids file) is what excludes genuinely self-leaked items — omit it to reproduce the (leakage-contaminated) numbers for comparison.
 
 Requires Python ≥3.10 (repo uses `match`/`case`) and `AGENTAUDITOR_API_KEY`/`AGENTAUDITOR_API_BASE`/`AGENTAUDITOR_MODEL_*` set via `.env`.
+
+### Reproducing the guardrail-filtered results specifically
+
+```bash
+# harmful: source already has row_index
+python CNFinBench/filter_blocked_rows.py \
+  CNFinBench/data/Qwen_Harmful/qwen_harmful_evaluation.json \
+  CNFinBench/data/new_folder harmful \
+  CNFinBench/data/filtered/harmful_evaluation_unblocked.json
+
+# harmless: source lacks row_index, derive from id (verified gapless 1..N per subset first)
+python CNFinBench/filter_blocked_rows.py \
+  <path to judge_meta_llama/llama's combined App+Cog+Inter.json> \
+  CNFinBench/data/new_folder harmless \
+  CNFinBench/data/filtered/harmless_evaluation_unblocked.json \
+  --derive-row-index-from-id
+
+python CNFinBench/cnfinbench_to_agentauditor.py CNFinBench/data/filtered/harmful_evaluation_unblocked.json AgentAuditor/data/cnfinbench-harmful-unblocked.json --run-name harmful-unblocked
+python CNFinBench/cnfinbench_to_agentauditor.py CNFinBench/data/filtered/harmless_evaluation_unblocked.json AgentAuditor/data/cnfinbench-harmless-unblocked.json --run-name harmless-unblocked
+
+# then the standard preprocess -> cluster -> demo -> infer_emb -> infer -> detect_leakage -> metrics
+# pipeline above, run separately for cnfinbench-harmful-unblocked and cnfinbench-harmless-unblocked
+```
