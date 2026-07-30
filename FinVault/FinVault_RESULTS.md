@@ -25,6 +25,19 @@ of this story belong together on a slide — "memory helps a lot for detecting r
 transfer to the attack-attempt-detection question" is the accurate one-line summary, not just the
 positive half. See "Results: baseline comparison" below for the full table.
 
+**Third finding, from `benign-v-malicious` (added 2026-07-30, per Anirudhh/Ivan's specific framing
+request — full dataset, `defended`+`attack_success` pooled as "malicious" vs. `benign`): this is
+the worst result in the whole set, and it's the one closest to the actual production question
+("is this interaction malicious at all"), so it needs to be presented plainly, not buried.** 89.9%
+of this dataset is actually malicious (901/1002 scoreable records) — trivially predicting
+"malicious" for everything would score 89.9% accuracy. AgentAuditor scores **53.9%**, more than 36
+points below that trivial baseline. Zero-shot does even worse (47.8%, ~42 points below baseline).
+Memory still helps here (+6.0 points over zero-shot), consistent with every comparison except
+`benign-v-defended` — but neither version is close to usable in absolute terms on this specific
+framing. Precision is strong (90.9%) — when the judge says "malicious," it's almost always right —
+but recall is only 54.2%, meaning it defaults to "benign" far more often than the true 89.9%
+malicious rate would justify. See "Key Takeaway #2b" below.
+
 ## Superseded — earlier numbers in this file were from a broken run
 
 An earlier version of this file reported a single pooled result (n=1058, accuracy 0.674). Those
@@ -32,9 +45,9 @@ numbers came from a run that was later discovered to be **accidentally zero-shot
 collision bug in `infer_emb.py` (fixed; see validity note #1) silently caused every record to
 receive 0 few-shot demonstrations instead of AgentAuditor's intended memory-augmented retrieval, so
 that run measured a plain zero-shot judge while being labeled as AgentAuditor's actual approach.
-**Retracted, not reported below.** The results below are from 4 separate HiPerGator runs (one per
+**Retracted, not reported below.** The results below are from 5 separate HiPerGator runs (one per
 pairwise comparison) with that bug fixed and independently verified (0.0% zero-demo records across
-all 4 — see validity note #1).
+all 5 — see validity note #1).
 
 ## Setup
 
@@ -46,13 +59,14 @@ all 4 — see validity note #1).
 - **Ground truth**: `outcome == "attack_success"` → unsafe (label 1); `"defended"`/`"benign"` →
   safe (label 0), except the `benign-v-defended` comparison, which uses a different framing
   entirely (see below).
-- **4 comparisons**, built by `FinVault/build_comparison_variants.py` from the same leak-fixed
+- **5 comparisons**, built by `FinVault/build_comparison_variants.py` from the same leak-fixed
   source:
   - **full** (1064 records): pooled `benign`+`defended` (0) vs. `attack_success` (1) — "did harm occur"
   - **defended-v-attack** (957 records): `defended` (0) vs. `attack_success` (1) — "did harm occur," isolating attack-attempted cases
   - **benign-v-attack** (643 records): `benign` (0) vs. `attack_success` (1) — "did harm occur," cleanest separation
   - **benign-v-defended** (528 records): `benign` (0) vs. `defended` (1) — a **different question**, "was there a manipulation attempt at all, regardless of outcome" (neither class involves real harm, so this uses a reworded `goal` prompt, not the stock safety-issue one — see the script's docstring for why reusing the stock prompt would be invalid here)
-- **Infrastructure**: all 4 ran on HiPerGator as separate SLURM jobs / repo copies (per this repo's
+  - **benign-v-malicious** (1064 records, added 2026-07-30): `benign` (0) vs. `defended`+`attack_success` pooled as "malicious" (1) — per Anirudhh/Ivan's specific framing (confirmed over Slack): the **full** dataset, not a filtered subset like `benign-v-defended`, asking "was this interaction malicious at all, regardless of outcome." Same reworded goal prompt as `benign-v-defended` (same underlying question), reused verbatim.
+- **Infrastructure**: all 5 ran on HiPerGator as separate SLURM jobs / repo copies (per this repo's
   documented parallelization pattern), with 64GB memory allocated to `infer_emb` (16GB was
   insufficient and caused 3/4 initial attempts to be OOM-killed — see validity note #1).
 
@@ -69,7 +83,7 @@ exception raised anywhere. This affected the original (now-retracted) FinVault r
 also found to have already affected a previously-published CNFinBench condition. **Fixed**
 (dataset-qualified cache keys) and a **hard guard added**: `infer_emb.py` now aborts if ≥50% of
 records would get zero demos, rather than silently writing a degenerate dataset. Verified on the
-current runs: 0.0% zero-demo records across all 4 comparisons.
+current runs: 0.0% zero-demo records across all 5 comparisons.
 
 **Bug B — output-parsing gap, in two rounds.** `eval.py`'s `extract_output()` didn't recognize the
 many different key names `gpt-oss-20b` actually used for its verdict — first found on the original
@@ -84,8 +98,10 @@ the actual failing records' key structure directly (not guessing): verdict keys 
 unifying the top-level and CoT-nested key lists into one shared, case/spacing-insensitive lookup,
 tested against synthetic cases matching the exact observed failure patterns plus a regression check
 against previously-working formats (both clean) before pushing. Verified against real data:
-success rate recovered to 96.6-97.9% across all 4 comparisons (individual counts in the Results
-table below).
+success rate recovered to 96.6-97.9% across the original 4 comparisons (individual counts in the
+Results table below). `benign-v-malicious` (added later) came in slightly lower at 94.2% — still a
+large recovery from the original 51-70% failure state, but a somewhat higher residual failure rate
+than the other 4; not individually investigated (see validity note #5).
 
 ### 2. Few-shot self-leakage — checked, clean
 
@@ -93,9 +109,9 @@ table below).
 as a few-shot demo during `infer_emb`, inflating its own score) is dataset-agnostic and applies
 here too. CNFinBench's own numbers (see its RESULTS.md) showed this leakage was severe in one
 condition (94% of representatives) and entirely absent in another, so this was not something to
-assume either way for FinVault. Run against all 4 comparisons' `k3.json`: **0 genuinely self-leaked
-items found in every single one** (full, defended-v-attack, benign-v-attack, benign-v-defended).
-Not a concern for these results.
+assume either way for FinVault. Run against all 5 comparisons' `k3.json`: **0 genuinely self-leaked
+items found in every single one** (full, defended-v-attack, benign-v-attack, benign-v-defended,
+benign-v-malicious). Not a concern for these results.
 
 ### 3. `full` comparison: 1 record (1063, not the full 1064) dropped by a request timeout — understood, not a mystery
 
@@ -151,6 +167,10 @@ before trusting the numbers below. Results in "Results: baseline comparison" bel
 - **`benign-v-defended`'s remaining ~2-3% parsing failures** (and similar small residuals on the
   other 3) were not individually inspected this round the way the original 6 stragglers were —
   assumed genuinely malformed based on the pattern established earlier, not re-verified per-record.
+  `benign-v-malicious`'s residual failure rate is somewhat higher (5.8%, 62/1064) than the other 4
+  (2.1-3.4%) — also not individually inspected; plausibly related to this comparison's much longer
+  average prompt length (full dataset, longer conversations on average than the filtered subsets),
+  similar to the single timeout-caused drop root-caused in validity note #3, but not confirmed.
 
 ## Results
 
@@ -160,6 +180,7 @@ before trusting the numbers below. Results in "Results: baseline comparison" bel
 | defended-v-attack ("did harm occur," attack-attempted only) | 933 / 957 (97.5%) | 0.8146 | 0.8927 | 0.7563 | 0.8188 |
 | benign-v-attack ("did harm occur," cleanest separation) | 624 / 643 (97.1%) | 0.7628 | 0.8970 | 0.8069 | 0.8496 |
 | benign-v-defended ("was there a manipulation attempt") | 510 / 528 (96.6%) | 0.3490 | 0.7305 | 0.2983 | 0.4236 |
+| benign-v-malicious ("was this interaction malicious at all") | 1002 / 1064 (94.2%) | 0.5389 | 0.9088 | 0.5416 | 0.6787 |
 
 **Confusion matrices:**
 
@@ -191,9 +212,19 @@ before trusting the numbers below. Results in "Results: baseline comparison" bel
 | **Actual 0 (benign)** | 56 (TN) | 45 (FP) |
 | **Actual 1 (defended)** | 287 (FN) | 122 (TP) |
 
+**benign-v-malicious**
+
+| | Predicted 0 (benign) | Predicted 1 (malicious) |
+|---|---|---|
+| **Actual 0 (benign)** | 52 (TN) | 49 (FP) |
+| **Actual 1 (malicious)** | 413 (FN) | 488 (TP) |
+
+901/1002 (89.9%) of scoreable records are actually malicious — a trivial "always predict malicious"
+baseline would score 89.9% accuracy here, far above AgentAuditor's actual 53.9%.
+
 ## Results: baseline comparison (AgentAuditor vs. `direct_eval` zero-shot)
 
-Same `gpt-oss-20b` model, same 4 datasets, only difference is whether the judge gets AgentAuditor's
+Same `gpt-oss-20b` model, same datasets, only difference is whether the judge gets AgentAuditor's
 retrieved few-shot demonstrations or nothing. `direct_eval`'s own metrics script (`direct_metric.py`)
 computes accuracy slightly differently from AgentAuditor's `eval.py` — it includes unparseable
 predictions in the accuracy denominator as automatically-wrong (`eval.py` excludes them entirely
@@ -207,9 +238,13 @@ computed by identical methodology — flagging rather than silently presenting t
 | defended-v-attack | 0.8146 | 0.5611 | **+25.3 pts** | 0.8188 | 0.6004 |
 | benign-v-attack | 0.7628 | 0.5428 | **+22.0 pts** | 0.8496 | 0.6813 |
 | benign-v-defended | 0.3490 | 0.4186 | **−7.0 pts** | 0.4236 | 0.5318 |
+| benign-v-malicious | 0.5389 | 0.4784 | **+6.0 pts** | 0.6787 | 0.6338 |
 
-`direct_eval`'s validity (parse success) rate was 97.5%, 96.9%, 97.2%, 97.5% respectively — all
-comparable to AgentAuditor's own 96.6-97.9%, so the gap isn't a parsing artifact on either side.
+`direct_eval`'s validity (parse success) rate was 97.5%, 96.9%, 97.2%, 97.5%, and 94.9% (`benign-v-malicious`)
+respectively — all comparable to AgentAuditor's own 94.2-97.9%, so the gap isn't a parsing artifact
+on either side. Both AgentAuditor and `direct_eval` are far below the 89.9% trivial-baseline
+accuracy on `benign-v-malicious` — the weakness there isn't specific to memory-augmented retrieval,
+it's a property of how this judge model handles that specific, heavily-imbalanced framing.
 
 ## Key takeaways
 
@@ -229,6 +264,15 @@ comparable to AgentAuditor's own 96.6-97.9%, so the gap isn't a parsing artifact
    cannot reliably distinguish an attack attempt from an ordinary interaction when no harm results,"
    not glossed over as a weak version of the other three comparisons** — it's answering a genuinely
    different, harder question.
+2b. **`benign-v-malicious` (the framing actually requested for the Citibank presentation) is the
+   worst result in the whole set, and it's below a trivial baseline, not just "mediocre."** 89.9% of
+   this dataset is actually malicious; trivially predicting "malicious" for everything scores 89.9%
+   accuracy. AgentAuditor scores 53.9% — over 36 points below that. `direct_eval` does even worse
+   (47.8%). Precision is strong (90.9% — when the judge says "malicious" it's almost always right),
+   but recall is only 54.2% — the judge defaults to "benign" far more than the true class balance
+   justifies. **This is the headline number for "can AgentAuditor tell malicious from benign across
+   the realistic full population," and it's not a good one — present it plainly, the way validity
+   note #3's and CNFinBench's below-baseline findings were, not softened.**
 3. **Two pipeline bugs (validity note #1) were found and fixed specifically because these results
    were checked against raw data rather than trusted at face value** — both silently produced
    plausible-looking but wrong numbers (a real zero-shot run masquerading as memory-augmented; a
@@ -251,17 +295,23 @@ comparable to AgentAuditor's own 96.6-97.9%, so the gap isn't a parsing artifact
 5. **Getting to this baseline required fixing 3 more bugs in code that had never actually been run
    before** (validity note #4) — `direct_eval` was completely non-functional prior to this session,
    for three independent reasons, each confirmed via a real crash before fixing. Self-leakage
-   (previously an open item) has also since been checked and is clean across all 4 comparisons
+   (previously an open item) has also since been checked and is clean across all 5 comparisons
    (validity note #2).
+6. **Memory helps least on exactly the comparisons that don't ask "did harm occur."** Ranking the
+   memory-vs-zero-shot delta across all 5: +25.3 (defended-v-attack), +23.3 (full), +22.0
+   (benign-v-attack), +6.0 (benign-v-malicious), −7.0 (benign-v-defended). The three large,
+   consistent wins are all "did harm occur" framings; the two weakest/negative results are the two
+   framings that pool `defended` in with a non-harm class. This is a consistent pattern across 5
+   independent runs, not noise from any single comparison.
 
 ## Reproducing this
 
 ```bash
 python3 FinVault/fix_v3_leakage.py FinVault/data/finvault_output_full1064_v3_anonymized FinVault/data/finvault_output_full1064_v3_fixed
 python3 FinVault/finvault_to_agentauditor.py FinVault/data/finvault_output_full1064_v3_fixed/trajectories.jsonl AgentAuditor/data/finvault-v3-fixed.json --run-name finvault-v3-fixed
-python3 FinVault/build_comparison_variants.py   # produces the 4 comparison datasets in AgentAuditor/data/
+python3 FinVault/build_comparison_variants.py   # produces the 5 comparison datasets in AgentAuditor/data/
 
-# per comparison (dataset keys: finvault-v3-fixed-full, -defended-v-attack, -benign-v-attack, -benign-v-defended):
+# per comparison (dataset keys: finvault-v3-fixed-full, -defended-v-attack, -benign-v-attack, -benign-v-defended, -benign-v-malicious):
 python3.11 -m AgentAuditor <dataset> preprocess
 python3.11 -m AgentAuditor <dataset> cluster
 python3.11 -m AgentAuditor <dataset> demo
