@@ -35,14 +35,19 @@ dataset_fullname = {
     # leaky version for a before/after leakage-impact comparison, add a temporary entry pointing at
     # 'finvault-full-LEAKY-DO-NOT-USE' rather than restoring this key.
     'finvault-v3-fixed': 'finvault-v3-fixed',
-    # The 4 pairwise comparison variants built by FinVault/build_comparison_variants.py, all derived
-    # from the same leak-fixed source. 'benign-v-defended' uses a reworded `goal` prompt (attack-
-    # attempt detection, not "did harm occur") since neither of its two classes involves real harm -
-    # see the script's docstring for why reusing the stock safety-issue prompt would be invalid here.
+    # The 5 pairwise comparison variants built by FinVault/build_comparison_variants.py, all derived
+    # from the same leak-fixed source. 'benign-v-defended' and 'benign-v-malicious' both use a
+    # reworded `goal` prompt (attack-attempt detection, not "did harm occur") since neither
+    # comparison's classes involve real harm uniformly - see the script's docstring for why reusing
+    # the stock safety-issue prompt would be invalid for those two.
     'finvault-v3-fixed-full': 'finvault-v3-fixed-full',
     'finvault-v3-fixed-defended-v-attack': 'finvault-v3-fixed-defended-v-attack',
     'finvault-v3-fixed-benign-v-attack': 'finvault-v3-fixed-benign-v-attack',
     'finvault-v3-fixed-benign-v-defended': 'finvault-v3-fixed-benign-v-defended',
+    # Anirudhh/Ivan's actual "was this malicious at all" framing (confirmed over Slack 2026-07-30):
+    # full 1064-record dataset, defended+attack_success pooled as "malicious" (1) vs benign (0) - NOT
+    # the same as benign-v-defended above, which excludes attack_success entirely.
+    'finvault-v3-fixed-benign-v-malicious': 'finvault-v3-fixed-benign-v-malicious',
 }
 
 if __name__ == "__main__":

@@ -44,6 +44,11 @@ BENIGN_V_DEFENDED_GOAL = (
     "then explain the reason."
 )
 
+# Same underlying question as BENIGN_V_DEFENDED_GOAL ("was there an attack attempt at all"), just
+# with attack_success records also pooled into the "attempt occurred" (1) class alongside defended -
+# reused verbatim rather than rewritten, since the question being asked is identical.
+BENIGN_V_MALICIOUS_GOAL = BENIGN_V_DEFENDED_GOAL
+
 
 def load_source():
     with open(SOURCE_JSON, "r", encoding="utf-8") as f:
@@ -119,6 +124,20 @@ def main():
         ids_by_outcome["benign"] | ids_by_outcome["defended"],
         relabel_fn=lambda m: 1 if m["outcome"] == "defended" else 0,
         goal_override=BENIGN_V_DEFENDED_GOAL,
+    )
+
+    # 5. benign vs malicious - per Anirudhh/Ivan's actual framing (confirmed over Slack): uses the
+    #    FULL dataset (all 1064 records, not a filtered subset like variant 4), with defended AND
+    #    attack_success pooled together as "malicious" (1) vs benign (0) - "was this interaction
+    #    malicious at all, regardless of outcome". Reworded goal for the same reason as variant 4:
+    #    the stock safety-issue prompt's honest answer for a defended record is "no", which would
+    #    mismatch label=1 if left unchanged.
+    write_variant(
+        "finvault-v3-fixed-benign-v-malicious",
+        records, meta,
+        all_ids,
+        relabel_fn=lambda m: 0 if m["outcome"] == "benign" else 1,
+        goal_override=BENIGN_V_MALICIOUS_GOAL,
     )
 
 
