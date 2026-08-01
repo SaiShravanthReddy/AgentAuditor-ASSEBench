@@ -113,25 +113,36 @@ assume either way for FinVault. Run against all 5 comparisons' `k3.json`: **0 ge
 items found in every single one** (full, defended-v-attack, benign-v-attack, benign-v-defended,
 benign-v-malicious). Not a concern for these results.
 
-### 3. `full` comparison: 1 record (1063, not the full 1064) dropped by a request timeout — understood, not a mystery
+### 3. `full` comparison: 1 record dropped by a request timeout — root-caused and since recovered
 
-`full`'s input dataset has 1064 records, but `eval.py` reports processing 1063 — traced end-to-end
-through every pipeline stage (`memory.json` → `k3.json` → `output-k3.json` →
-`output-k3_corrected.json`) rather than assumed: the record (`...case_fixed_0525`) is present
-through `infer_emb`, then vanishes starting at `infer`'s output. `infer.py` sends failed-after-all-
+`full`'s input dataset has 1064 records; `eval.py` initially reported processing only 1063 — traced
+end-to-end through every pipeline stage (`memory.json` → `k3.json` → `output-k3.json` →
+`output-k3_corrected.json`) rather than assumed: the record (`...case_fixed_0525`) was present
+through `infer_emb`, then vanished starting at `infer`'s output. `infer.py` sends failed-after-all-
 retries items to a separate `failed.json` rather than including them in the main output — confirmed
 via that file this was the only such case for `full`.
 
-Root cause confirmed from the SLURM log (not inferred): all 3 retry attempts failed identically with
-`Read timed out (read timeout=30)` — the same failure every time, not a transient network blip (a
-real blip wouldn't fail 3/3 identically). This record's prompt happened to retrieve 3 few-shot
-demonstrations in this particular run (each a full conversation + detailed chain-of-thought
-example), making it one of the longest prompts in the run — plausibly too long for `gpt-oss-20b` to
-finish generating within `infer.py`'s 30-second per-attempt timeout. Consistent with this: the same
-underlying record also appears in the `defended-v-attack` and `benign-v-attack` comparisons and
-succeeded in both — each comparison runs its own separate clustering/demo-retrieval pipeline, so the
-same query record draws a different (and in those runs, shorter) set of demos. Isolated to this one
-record in this one comparison (0.09% of `full`); not indicative of a systemic issue.
+Root cause confirmed from the SLURM log (not inferred): all 3 of `infer.py`'s automatic retry
+attempts failed identically with `Read timed out (read timeout=30)` — the same failure every time,
+not a transient network blip (a real blip wouldn't fail 3/3 identically). This record's prompt
+happened to retrieve 3 few-shot demonstrations in this particular run (each a full conversation +
+detailed chain-of-thought example), making it one of the longest prompts in the run — too long for
+`gpt-oss-20b` to finish generating within `infer.py`'s 30-second per-attempt timeout. Consistent
+with this: the same underlying record also appears in the `defended-v-attack` and `benign-v-attack`
+comparisons and succeeded in both — each comparison runs its own separate clustering/demo-retrieval
+pipeline, so the same query record draws a different (and in those runs, shorter) set of demos.
+
+**Since recovered**: manually replayed this record's exact saved prompt (from `failed.json`)
+directly against the API outside `infer.py`'s normal loop. First retry at 180s (6x the original
+timeout) still timed out, confirming this specific prompt's generation cost is genuinely unusual,
+not a fluke — succeeded on a second attempt at 600s. Spliced into `output-k3.json` and
+`output-k3_corrected.json`; caught and fixed an accidental duplicate entry from a re-run before
+trusting the result (`eval.py` briefly reported 1065 items - deduplicated by `id` down to the
+correct 1064 before re-running `eval`). **`full` is now the only comparison with 100% record
+coverage** (1064/1064 input, 1042/1064 successfully parsed - same 97.9% parse-success rate as
+before recovery). The recovered record's own accuracy contribution: a true positive, and the
+pooled metrics moved by <0.1 point in every column - confirming this was always a negligible,
+isolated case (0.09% of the dataset), not a sign of a systemic issue.
 
 ### 4. `direct_eval` baseline — run, and it needed 3 of its own bug fixes first
 
@@ -176,7 +187,7 @@ before trusting the numbers below. Results in "Results: baseline comparison" bel
 
 | Comparison | n (successfully processed) | Accuracy | Precision | Recall | F1 |
 |---|---|---|---|---|---|
-| full (pooled, "did harm occur") | 1041 / 1063 (97.9%) | 0.7829 | 0.7944 | 0.7639 | 0.7789 |
+| full (pooled, "did harm occur") | 1042 / 1064 (97.9%) | 0.7831 | 0.7948 | 0.7644 | 0.7793 |
 | defended-v-attack ("did harm occur," attack-attempted only) | 933 / 957 (97.5%) | 0.8146 | 0.8927 | 0.7563 | 0.8188 |
 | benign-v-attack ("did harm occur," cleanest separation) | 624 / 643 (97.1%) | 0.7628 | 0.8970 | 0.8069 | 0.8496 |
 | benign-v-defended ("was there a manipulation attempt") | 510 / 528 (96.6%) | 0.3490 | 0.7305 | 0.2983 | 0.4236 |
@@ -189,7 +200,7 @@ before trusting the numbers below. Results in "Results: baseline comparison" bel
 | | Predicted 0 | Predicted 1 |
 |---|---|---|
 | **Actual 0** | 417 (TN) | 103 (FP) |
-| **Actual 1** | 123 (FN) | 398 (TP) |
+| **Actual 1** | 123 (FN) | 399 (TP) |
 
 **defended-v-attack**
 
