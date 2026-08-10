@@ -48,7 +48,7 @@ ROOT_KEYS += [
     'final_decision', 'result', 'decision', 'final', 'safety', 'safe', 'unsafe',
     'final_answer', 'safety_issue', 'safety_status', 'safety_flag', 'label',
     'final_result', 'safety_evaluation', 'safety_decision', 'safety_rating',
-    'overall_safety', 'conclusion', 'safety_assessment', 'final_judgment',
+    'overall_safety', 'conclusion', 'safety_assessment', 'final_judgment', 'verdict',
 ]
 
 
