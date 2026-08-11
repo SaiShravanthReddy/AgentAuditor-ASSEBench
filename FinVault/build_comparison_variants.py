@@ -22,19 +22,17 @@ Variants:
     the old prompt while relabeling defended=1 would mark a correctly-reasoning judge as wrong).
 
 Usage:
-    python FinVault/build_comparison_variants.py
-    (reads AgentAuditor/data/finvault-v3-fixed.json + .meta.json, writes 4 new datasets under
-    AgentAuditor/data/)
+    python FinVault/build_comparison_variants.py [--source-name finvault-v3-fixed]
+    (reads AgentAuditor/data/<source-name>.json + .meta.json, writes 5 new datasets prefixed
+    <source-name>- under AgentAuditor/data/)
 """
+import argparse
 import json
 import os
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 REPO_ROOT = os.path.dirname(SCRIPT_DIR)
 DATA_DIR = os.path.join(REPO_ROOT, "AgentAuditor", "data")
-
-SOURCE_JSON = os.path.join(DATA_DIR, "finvault-v3-fixed.json")
-SOURCE_META = os.path.join(DATA_DIR, "finvault-v3-fixed.json.meta.json")
 
 BENIGN_V_DEFENDED_GOAL = (
     "Below is an interaction process between a user and an agent. Your goal is to judge whether "
@@ -50,10 +48,12 @@ BENIGN_V_DEFENDED_GOAL = (
 BENIGN_V_MALICIOUS_GOAL = BENIGN_V_DEFENDED_GOAL
 
 
-def load_source():
-    with open(SOURCE_JSON, "r", encoding="utf-8") as f:
+def load_source(source_name):
+    source_json = os.path.join(DATA_DIR, f"{source_name}.json")
+    source_meta = os.path.join(DATA_DIR, f"{source_name}.json.meta.json")
+    with open(source_json, "r", encoding="utf-8") as f:
         records = json.load(f)
-    with open(SOURCE_META, "r", encoding="utf-8") as f:
+    with open(source_meta, "r", encoding="utf-8") as f:
         meta = json.load(f)
     return records, meta
 
@@ -85,7 +85,13 @@ def write_variant(name, records, meta, filtered_ids, relabel_fn=None, goal_overr
 
 
 def main():
-    records, meta = load_source()
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--source-name", default="finvault-v3-fixed",
+                         help="AgentAuditor/data/<source-name>.json to read (default: finvault-v3-fixed)")
+    args = parser.parse_args()
+    prefix = args.source_name
+
+    records, meta = load_source(args.source_name)
     outcome_of = {rid: m["outcome"] for rid, m in meta.items()}
 
     ids_by_outcome = {"benign": set(), "defended": set(), "attack_success": set()}
@@ -99,18 +105,18 @@ def main():
     # 1. full: benign+defended=0 vs attack_success=1 - identical to source, just copied under an
     #    explicit name so it sits alongside the other 3 variants consistently.
     all_ids = set(outcome_of.keys())
-    write_variant("finvault-v3-fixed-full", records, meta, all_ids)
+    write_variant(f"{prefix}-full", records, meta, all_ids)
 
     # 2. defended vs attack_success - label already correct (0/1), just filter.
     write_variant(
-        "finvault-v3-fixed-defended-v-attack",
+        f"{prefix}-defended-v-attack",
         records, meta,
         ids_by_outcome["defended"] | ids_by_outcome["attack_success"],
     )
 
     # 3. benign vs attack_success - label already correct (0/1), just filter.
     write_variant(
-        "finvault-v3-fixed-benign-v-attack",
+        f"{prefix}-benign-v-attack",
         records, meta,
         ids_by_outcome["benign"] | ids_by_outcome["attack_success"],
     )
@@ -119,7 +125,7 @@ def main():
     #    docstring): defended=1/benign=0, with a reworded goal prompt so what's asked matches what's
     #    graded.
     write_variant(
-        "finvault-v3-fixed-benign-v-defended",
+        f"{prefix}-benign-v-defended",
         records, meta,
         ids_by_outcome["benign"] | ids_by_outcome["defended"],
         relabel_fn=lambda m: 1 if m["outcome"] == "defended" else 0,
@@ -133,7 +139,7 @@ def main():
     #    the stock safety-issue prompt's honest answer for a defended record is "no", which would
     #    mismatch label=1 if left unchanged.
     write_variant(
-        "finvault-v3-fixed-benign-v-malicious",
+        f"{prefix}-benign-v-malicious",
         records, meta,
         all_ids,
         relabel_fn=lambda m: 0 if m["outcome"] == "benign" else 1,
