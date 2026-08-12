@@ -4,7 +4,61 @@
 
 ---
 
+## Confidence / AUROC / AUPRC re-run (2026-08-11/12) — current numbers
+
+Per Ivan's confirmed decision to use self-reported LLM confidence (not logprobs) for AUROC/AUPRC,
+added a `confidence` field (0.0-1.0) to the judge prompt and re-ran every dataset below. All numbers
+in this section are **independently re-verified** — pulled the raw per-item output files and
+recomputed confusion matrices / AUROC / AUPRC from scratch (not just trusting `eval.py`'s own
+printout), confirmed exact matches. This section supersedes the accuracy-only numbers further down
+for the same datasets; those are kept for historical context (they predate the confidence field and,
+for FinVault, predate a fixed prompt-construction bug — see note below the FinVault table).
+
+### FinVault — v3 vs. v5, same 2 priority questions on independently-generated data
+
+| | Q1: Did the attack succeed? (v3) | Q1 (v5) | Q2: Was it malicious at all? (v3) | Q2 (v5) |
+|---|---|---|---|---|
+| Accuracy | 77.5% | 76.5% | 49.1% | 43.6% |
+| Precision / Recall | 79.3% / 75.0% | 82.1% / 69.0% | 100% / 43.4% | 99.7% / 38.7% |
+| F1 | 77.1% | 75.0% | 60.5% | 55.7% |
+| AUROC / AUPRC | 0.804 / 0.764 | 0.801 / 0.773 | 0.741 / 0.949 | 0.716 / 0.953 |
+| Base rate (trivial "always malicious" baseline) | ~50% | ~51% | ~90% | ~92% |
+
+**Q1 is solid and reproduces cleanly on v5** — not a v3 artifact. **Q2's miscalibration also
+reproduces on v5**, slightly worse if anything: zero/near-zero false positives, but the judge misses
+well over half of actually-malicious cases, landing far below the trivial "always guess malicious"
+baseline both times. This is a genuine, dataset-independent finding, not noise.
+
+*Note on v3 vs. earlier-reported v3 numbers*: this re-run also fixed a real bug where the reworded
+`goal` prompt built specifically for the Q2 comparison (asking "was there a manipulation attempt"
+instead of the stock "did harm occur") was never actually reaching the model — `combine_to_prompt()`
+silently ignored the per-record `goal` field. So the v3 Q2 numbers above are the first ones that
+actually reflect the intended question; don't compare them to the historical Q2 table further below
+(that one predates the fix and was graded against the wrong prompt).
+
+### CNFinBench — all 5 conditions, unfiltered + guardrail-filtered
+
+| Condition | n | Accuracy | Precision / Recall | AUROC | AUPRC | Base rate |
+|---|---|---|---|---|---|---|
+| harmful | 313 | 56.9% | 75.4% / 27.7% | 0.625 | 0.619 | 53.0% |
+| harmful-unblocked | 175 | 49.7% | 71.4% / 24.3% | 0.628 | 0.678 | 58.9% |
+| harmless | 300 | 84.0% | 20.8% / 14.7% | 0.534 | 0.134 | 11.3% |
+| harmless-unblocked | 281 | 87.5% | 0% / 0% | 0.541 | 0.143 | 12.5% |
+| pooled | 614 | 68.6% | 54.3% / 19.1% | 0.614 | 0.421 | 32.4% |
+
+**harmless / harmless-unblocked have essentially no ranking signal** (AUROC ~0.53-0.54, barely above
+random) — the judge almost never flags anything unsafe in these subsets, and even its confidence
+scores don't meaningfully separate the few true positives from the rest. This is a materially weaker
+result than FinVault's Q2: there, the hard verdict was miscalibrated but the *confidence ranking*
+still carried real signal (AUROC 0.72-0.80); here there's barely any signal at all to recover.
+`harmful` / `harmful-unblocked` are closer to FinVault's pattern — weak-to-moderate but real signal.
+
+---
+
 ## FinVault — 2 analyses (per Anirudhh/Ivan's framing)
+
+*Historical (pre-confidence-field, and Q2 predates the goal-prompt bug fix) — see the
+"Confidence / AUROC / AUPRC re-run" section above for current numbers.*
 
 Both use the **full 1064-record dataset**, just with different label groupings.
 
@@ -36,6 +90,10 @@ Label = `defended`+`attack_success` pooled as "malicious" (1) vs. `benign` (0).
 ---
 
 ## CNFinBench — filtered (guardrail-unblocked) vs. unfiltered
+
+*Historical (pre-confidence-field) — see the "Confidence / AUROC / AUPRC re-run" section above for
+current numbers including all 5 conditions. The accuracy/recall/F1 figures below are consistent with
+that section's, just without AUROC/AUPRC.*
 
 Removing conversations blocked by the target model's own guardrails, to see how AgentAuditor performs on what actually gets through.
 
