@@ -276,9 +276,14 @@ Your JSON Output:"""
                     logger.error(f"Unhandled error during processing entry ID '{entry_id}': {e}", exc_info=True)
                     srf_results = {key: f"{PROCESSING_ERROR_PREFIX}_UnhandledException" for key in EXPECTED_KEYS}
 
-            # Only keep specified fields from original entry
+            # Only keep specified fields from original entry. 'goal' is included so that
+            # per-record reworded questions (e.g. FinVault's "was there a manipulation attempt"
+            # comparisons, built by FinVault/build_comparison_variants.py) survive into memory.json
+            # and downstream demo generation - previously dropped here, which meant demo.py's
+            # chain-of-thought generation always fell back to the stock safe/unsafe framing even for
+            # datasets with a genuinely different question, regardless of what infer.py itself asked.
             filtered_entry = {
-                key: entry.get(key) for key in ['id', 'profile', 'contents', 'label'] 
+                key: entry.get(key) for key in ['id', 'profile', 'contents', 'label', 'goal']
                 if key in entry
             }
             # Add the new SRF results
