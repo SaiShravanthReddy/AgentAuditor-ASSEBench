@@ -12,6 +12,8 @@ import torch.nn.functional as F
 from sentence_transformers import SentenceTransformer
 import os
 
+from .demo_repair import is_correctly_nested_cot
+
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(name)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -596,6 +598,35 @@ class EmbeddingProcessor:
                  return
             if not embeddings2:
                  logger.error(f"Failed to obtain embeddings for query file: {file_path2}. Aborting.")
+                 return
+
+            # --- Exclude reference items with invalid/unrepaired chain_of_thought from retrieval
+            # candidacy entirely ---
+            # demo_repair.py logs (but does not remove) records whose LLM-based CoT repair failed
+            # validation - they stay in demo_fixed.json with a raw-string or malformed CoT.
+            # generate_fewshot_demo() silently falls through to an empty {"chain_of_thought": {}}
+            # for these, wasting one of only k few-shot slots on a blank demo instead of a useful
+            # one. Filtering them out here (before similarity search, not after) lets the next-best
+            # actually-valid candidate take that slot instead of just leaving a gap. Uses the exact
+            # same validity check demo_repair.py itself uses, so a record it couldn't fix is never
+            # offered as a candidate here.
+            valid_ref_ids = {
+                ref_id for ref_id, item in data1.items()
+                if is_correctly_nested_cot(item.get('chain_of_thought'))
+            }
+            invalid_count = len(embeddings1) - len(valid_ref_ids & embeddings1.keys())
+            if invalid_count > 0:
+                logger.warning(
+                    f"Excluding {invalid_count}/{len(embeddings1)} reference items from retrieval "
+                    f"candidacy: invalid/unrepaired chain_of_thought (would produce a blank "
+                    f"few-shot demo otherwise)."
+                )
+            embeddings1 = {ref_id: emb for ref_id, emb in embeddings1.items() if ref_id in valid_ref_ids}
+            if not embeddings1:
+                 logger.error(
+                     f"All reference items were excluded due to invalid chain_of_thought - "
+                     f"0 valid demos remain in {file_path1}. Aborting."
+                 )
                  return
 
             # --- Generate Few-Shot Examples ---
