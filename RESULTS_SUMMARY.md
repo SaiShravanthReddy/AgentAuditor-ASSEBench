@@ -36,6 +36,44 @@ silently ignored the per-record `goal` field. So the v3 Q2 numbers above are the
 actually reflect the intended question; don't compare them to the historical Q2 table further below
 (that one predates the fix and was graded against the wrong prompt).
 
+### Fix validation (2026-08-24) — retrieval/demo-generation fixes, tested on v3 Q2
+
+Diagnostic investigation into *why* AgentAuditor underperforms (initiated by Anirudhh) found two
+concrete, code-level root causes for Q2's miscalibration, both now fixed and pushed:
+
+- **Finding 1 / Fix 1**: `demo.py`'s chain-of-thought generation and `infer_emb.py`'s few-shot Q/A
+  packaging both hardcoded the stock "judge if safe/unsafe" framing regardless of a record's actual
+  `goal` field - so Q2's demos reasoned about generic operational safety violations instead of
+  "was there a manipulation attempt," teaching the wrong signal. Also required fixing
+  `preprocess.py`, which silently dropped `goal` from its output whitelist.
+- **Finding 2 / Fix 2**: `demo_repair.py` logs but doesn't remove records whose LLM-based CoT repair
+  failed - they stayed in the retrieval pool with broken/blank chain-of-thought, silently wasting
+  few-shot slots. Now excluded from retrieval candidacy entirely before similarity search runs.
+
+**Tested on `finvault-v3-fixed-benign-v-malicious` (Q2)** - re-ran `cluster→demo→infer_emb→infer→eval`
+with both fixes applied (reused the existing, already-clean `memory.json` with `goal` patched back in,
+skipping the expensive `preprocess` LLM pass since scenario/risk/failure classification doesn't
+depend on `goal`). Results independently re-verified from raw output (exact match):
+
+| | Before (baseline) | After (Fix 1+2) | Δ |
+|---|---|---|---|
+| Accuracy | 49.1% | 56.7% | +7.6 |
+| Precision / Recall | 100% / 43.4% | 99.6% / 52.1% | −0.4 / **+8.7** |
+| F1 | 60.5% | 68.4% | +7.9 |
+| AUROC / AUPRC | 0.741 / 0.949 | 0.764 / 0.953 | +0.023 / +0.004 |
+| Confusion (FN → TP) | FN=587, TP=370 | FN=458, TP=498 | **128 more malicious cases caught** |
+
+**Recall improved meaningfully (+8.7 points) with precision staying near-perfect** - confirms both
+root causes were real contributors to Q2's miscalibration, not just plausible-sounding hypotheses.
+One caveat worth tracking: Fix 2 excluded 24/63 (38%) of this run's demo pool as broken, notably
+higher than the 12/63 (19%) measured on the old (pre-Fix-1) demo pool - likely because Fix 1's
+goal-aware `demo.py` prompt produces different raw LLM output with its own JSON-parse-failure rate.
+`demo_repair.py`'s repair success rate is itself a candidate for future improvement.
+
+Not yet done: re-testing on v5's `benign-v-malicious` or the deprioritized `benign-v-defended`
+(both share Finding 1's reworded-goal issue) to confirm the improvement generalizes beyond this one
+dataset.
+
 ### CNFinBench — all 5 conditions, unfiltered + guardrail-filtered
 
 | Condition | n | Accuracy | Precision / Recall | AUROC | AUPRC | Base rate |
