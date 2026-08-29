@@ -399,12 +399,20 @@ class EmbeddingProcessor:
                                     reference_embeddings: DatasetEmbeddings,
                                     k: int,
                                     top_n_content: int,
-                                    params: List[Any]
+                                    params: List[Any],
+                                    exclude_id: Any = None
                                     ) -> List[Tuple[Any, float]]:
         """
         Finds the k most similar items using a two-stage approach.
         If k == top_n_content, it bypasses stage 2 for original behavior mimicry.
         Returns list of (reference_id, score) tuples. Score is content sim if bypassed, else weighted score.
+
+        Args:
+            exclude_id: if set, this id is never eligible as its own few-shot demo. A cluster
+                representative is also a member of the full query set it was drawn from, so without
+                this a query whose own dialogue was chosen as a cluster representative would very
+                likely retrieve itself (near-perfect content similarity) - self-leakage confirmed to
+                actually happen in production (see AGENTAUDITOR_DIAGNOSIS.md's CNFinBench section).
         """
         if not reference_embeddings or k <= 0:
              logger.debug("Reference embeddings empty or k <= 0, returning empty list.")
@@ -425,6 +433,8 @@ class EmbeddingProcessor:
         content_similarities = []
         valid_refs_count = 0
         for ref_id, ref_embs in reference_embeddings.items():
+             if exclude_id is not None and ref_id == exclude_id:
+                 continue
              if not isinstance(ref_embs, dict): continue # Skip invalid entries
              ref_ec = ref_embs.get('Ec')
              if isinstance(ref_ec, np.ndarray):
@@ -657,13 +667,17 @@ class EmbeddingProcessor:
                      skipped_items += 1
                      continue
 
-                # Find similar items using the two-stage method
+                # Find similar items using the two-stage method - exclude_id=query_id prevents a
+                # cluster representative from retrieving itself when it's also being judged as a
+                # query (the reference and query files overlap: representatives are drawn from the
+                # same full dataset the query file is).
                 similar_items_info = self.find_most_similar_two_stage(
                     query_embeddings=query_embs,
                     reference_embeddings=embeddings1,
                     k=k,
                     top_n_content=top_n_content,
-                    params=params
+                    params=params,
+                    exclude_id=query_id
                 ) # Returns List[Tuple[ref_id, score]]
 
                 # --- Generate Demos from Found Similar Items ---
