@@ -77,6 +77,8 @@ AgentAuditor-ASSEBench/
 ├── 📄 README.md                        # Project documentation
 ├── 📄 LICENSE                          # Apache 2.0 license
 ├── 📄 requirements.txt                  # Python dependencies
+├── 📄 RESULTS_SUMMARY.md               # Cross-benchmark results summary (FinVault + CNFinBench)
+├── 📄 AGENTAUDITOR_DIAGNOSIS.md         # Root-cause findings and fixes for known miscalibration issues
 ├── 🚀 agent_auditor.sh                 # Main AgentAuditor pipeline script
 ├── 🎯 direct_eval.sh                   # Direct evaluation baseline script
 ├── 🎨 assets/                          # Visual assets
@@ -121,13 +123,20 @@ AgentAuditor-ASSEBench/
 │       ├── AgentJudge-security.json    # Security-focused evaluation
 │       └── AgentJudge-strict.json      # Strict evaluation criteria
 ├── 🏦 CNFinBench/                      # Benchmark extension: CNFinBench evaluation
-│   ├── RESULTS.md                      # Write-up: setup, validity notes, full results
+│   ├── CNFinBench_RESULTS.md           # Write-up: setup, validity notes, full results
 │   ├── cnfinbench_to_agentauditor.py   # Converter: CNFinBench schema -> AgentAuditor schema
 │   ├── cnfinbench_metrics.py           # Metrics (accuracy/F1/balanced acc/unsafe recall)
 │   ├── cnfinbench_detect_leakage.py    # Detects few-shot self-leakage in retrieval results
+│   ├── filter_blocked_rows.py          # Filters conversations blocked by target-model guardrails
 │   └── data/                           # Raw CNFinBench source data (gitignored, local only)
-└── 🏦 FinVault/                        # Benchmark extension: FinVault evaluation (scaffolded)
-    ├── README.md                       # Structure notes, mirrors CNFinBench/
+└── 🏦 FinVault/                        # Benchmark extension: FinVault evaluation
+    ├── FinVault_RESULTS.md             # Write-up: setup, validity notes, full results
+    ├── README.md                       # Data versions, leakage investigation, structure notes
+    ├── finvault_to_agentauditor.py     # Converter: FinVault schema -> AgentAuditor schema
+    ├── build_comparison_variants.py    # Builds pairwise label-comparison datasets from one source
+    ├── fix_v3_leakage.py               # Scrubs real case_ids leaked into judge-visible text
+    ├── verify_v3_anonymization.py      # Verifies fix_v3_leakage.py's output is actually leak-free
+    ├── run_finvault_pipeline.sh        # Wraps the 6 AgentAuditor stages with timing/logging
     └── data/                           # Raw FinVault source data (gitignored, local only)
 ```
 
