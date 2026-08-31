@@ -1,3 +1,10 @@
+"""Runs immediately after infer_fix1.py, as part of the same 'infer' pipeline stage.
+
+LLM-based fallback repair for whatever output-k3_fixed.json entries infer_fix1.py's mechanical
+repair couldn't fix - sends the still-broken output to an LLM with a reformat-as-JSON correction
+prompt, with retries. Writes AgentAuditor/temp/<dataset>/output-k3_corrected.json, the file eval.py
+actually reads.
+"""
 import json
 import time
 import requests

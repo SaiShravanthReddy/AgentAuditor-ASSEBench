@@ -1,3 +1,10 @@
+"""Stage 2 of 6: representative selection via clustering.
+
+Embeds every record in memory.json (nomic-ai/nomic-embed-text-v1.5, optionally Matryoshka-truncated)
+and runs FINCH clustering to pick ~10% of the dataset (target_n_clusters = len(data) / 10) as
+"representative" records - the only ones expensive full chain-of-thought demos get generated for
+in demo.py. Writes AgentAuditor/temp/<dataset>/cluster.json. No LLM calls in this stage.
+"""
 import json
 import numpy as np
 from typing import Dict, List, Union, Optional, Tuple, Any

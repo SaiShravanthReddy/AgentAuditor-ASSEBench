@@ -1,3 +1,9 @@
+"""Runs immediately after infer.py, as part of the same 'infer' pipeline stage.
+
+Mechanical (no LLM call) JSON repair of output-k3.json - strips markdown code fences, fixes common
+quoting/escaping issues, etc. Writes AgentAuditor/temp/<dataset>/output-k3_fixed.json. Whatever
+this can't fix is left for infer_fix2.py's LLM-based repair.
+"""
 import json
 # sys module removed as we don't need command line arguments
 import re

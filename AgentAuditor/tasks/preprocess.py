@@ -1,3 +1,10 @@
+"""Stage 1 of 6: semantic annotation.
+
+For each record in AgentAuditor/data/<dataset_fullname>.json, calls an LLM to generate
+application_scenario / risk_type / failure_mode tags from the record's `contents` field. Only
+id/profile/contents/label/goal survive from the input record; every other field is dropped.
+Writes AgentAuditor/temp/<dataset>/memory.json, the input to cluster.py.
+"""
 import json
 import time
 from openai import OpenAI

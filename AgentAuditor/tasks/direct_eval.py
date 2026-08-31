@@ -1,3 +1,11 @@
+"""Zero-shot baseline (no memory/retrieval), for comparison against the 6-stage pipeline.
+
+Judges each record in AgentAuditor/data/<dataset_fullname>.json directly with an LLM - no
+preprocess/cluster/demo/retrieval steps, no few-shot examples. Isolates the effect of
+AgentAuditor's memory augmentation by comparing this baseline's accuracy against the full
+pipeline's. Writes AgentAuditor/direct_temp/<dataset>/, then direct_metric.py computes its
+metrics.
+"""
 import os
 import re
 import sys

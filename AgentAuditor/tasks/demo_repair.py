@@ -1,3 +1,13 @@
+"""Runs immediately after demo.py, as part of the same 'demo' pipeline stage (not a separate CLI
+stage of its own).
+
+Validates each demo.json record's chain_of_thought against the expected nested schema
+({"chain_of_thought": {..., "Output": "0 (safe)" | "1 (unsafe)"}}) via is_correctly_nested_cot().
+Records that fail get one LLM-based repair attempt. Records that still fail after that are left
+in place with the broken/unparseable chain_of_thought (logged to failed_cot_processing_log.json,
+not removed) - infer_emb.py is responsible for excluding these from retrieval candidacy, since
+this stage does not filter them out itself. Writes AgentAuditor/temp/<dataset>/demo_fixed.json.
+"""
 import json
 import time
 import requests
