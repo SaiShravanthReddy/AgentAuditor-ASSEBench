@@ -2,7 +2,7 @@
 """Convert FinVault trajectory records into AgentAuditor's ASSEBench input schema.
 
 CURRENT EXPECTED INPUT: v3-fixed (finvault_output_full1064_v3_fixed/trajectories.jsonl), produced
-by FinVault/fix_v3_leakage.py from Xiaoyu's v3 ("anonymized") export. v3 on its own was NOT
+by FinVault/fix_v3_leakage.py from the v3 data provider's ("anonymized") export. v3 on its own was NOT
 leakage-free despite being labeled anonymized - verified directly (not assumed) that (1) the
 top-level `case_id` field was never anonymized (1064/1064 records still had the real,
 technique-revealing string, e.g. "ATTACK_V1_001_authority_override"), and (2) 64/1064 records had

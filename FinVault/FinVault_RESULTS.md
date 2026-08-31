@@ -25,7 +25,7 @@ of this story belong together on a slide — "memory helps a lot for detecting r
 transfer to the attack-attempt-detection question" is the accurate one-line summary, not just the
 positive half. See "Results: baseline comparison" below for the full table.
 
-**Third finding, from `benign-v-malicious` (added 2026-07-30, per Anirudhh/Ivan's specific framing
+**Third finding, from `benign-v-malicious` (added 2026-07-30, per the team's specific framing
 request — full dataset, `defended`+`attack_success` pooled as "malicious" vs. `benign`): this is
 the worst result in the whole set, and it's the one closest to the actual production question
 ("is this interaction malicious at all"), so it needs to be presented plainly, not buried.** 89.9%
@@ -54,7 +54,7 @@ all 5 — see validity note #1).
 - **Model**: `gpt-oss-20b`, served via UF's AI gateway (OpenAI-compatible endpoint), used for every
   LLM-calling pipeline stage (preprocess, demo, demo_repair, infer, infer_fix2).
 - **Data**: `finvault_output_full1064_v3_fixed` — see `FinVault/README.md`'s "Data versions" and
-  "Leakage investigation" sections for how this was derived from Xiaoyu's v3 export and what was
+  "Leakage investigation" sections for how this was derived from the v3 data export and what was
   fixed.
 - **Ground truth**: `outcome == "attack_success"` → unsafe (label 1); `"defended"`/`"benign"` →
   safe (label 0), except the `benign-v-defended` comparison, which uses a different framing
@@ -65,7 +65,7 @@ all 5 — see validity note #1).
   - **defended-v-attack** (957 records): `defended` (0) vs. `attack_success` (1) — "did harm occur," isolating attack-attempted cases
   - **benign-v-attack** (643 records): `benign` (0) vs. `attack_success` (1) — "did harm occur," cleanest separation
   - **benign-v-defended** (528 records): `benign` (0) vs. `defended` (1) — a **different question**, "was there a manipulation attempt at all, regardless of outcome" (neither class involves real harm, so this uses a reworded `goal` prompt, not the stock safety-issue one — see the script's docstring for why reusing the stock prompt would be invalid here)
-  - **benign-v-malicious** (1064 records, added 2026-07-30): `benign` (0) vs. `defended`+`attack_success` pooled as "malicious" (1) — per Anirudhh/Ivan's specific framing (confirmed over Slack): the **full** dataset, not a filtered subset like `benign-v-defended`, asking "was this interaction malicious at all, regardless of outcome." Same reworded goal prompt as `benign-v-defended` (same underlying question), reused verbatim.
+  - **benign-v-malicious** (1064 records, added 2026-07-30): `benign` (0) vs. `defended`+`attack_success` pooled as "malicious" (1) — per the team's specific framing (confirmed 2026-07-30): the **full** dataset, not a filtered subset like `benign-v-defended`, asking "was this interaction malicious at all, regardless of outcome." Same reworded goal prompt as `benign-v-defended` (same underlying question), reused verbatim.
 - **Infrastructure**: all 5 ran on HiPerGator as separate SLURM jobs / repo copies (per this repo's
   documented parallelization pattern), with 64GB memory allocated to `infer_emb` (16GB was
   insufficient and caused 3/4 initial attempts to be OOM-killed — see validity note #1).
@@ -288,7 +288,7 @@ it's a property of how this judge model handles that specific, heavily-imbalance
    were checked against raw data rather than trusted at face value** — both silently produced
    plausible-looking but wrong numbers (a real zero-shot run masquerading as memory-augmented; a
    ~35-48% data-loss rate masquerading as normal parsing noise). Worth stating explicitly for
-   anything downstream (e.g. Ivan's presentation) that cites these numbers: they reflect a
+   anything downstream (e.g. a stakeholder presentation) that cites these numbers: they reflect a
    corrected, verified pipeline, not the first run's output.
 4. **Memory/retrieval provides a large, consistent benefit specifically on the "did harm occur"
    question — and is the one place it actively hurts on the different question.** AgentAuditor beats

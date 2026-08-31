@@ -70,7 +70,7 @@ rather than a simple bug.
 2. Improve `demo_repair.py`'s repair success rate
 3. Try a different judge model on CNFinBench harmless (`gpt-oss-120b` first — easy swap, cheap to
    test: only needs `infer_emb→infer→eval` re-run)
-4. Ask Dhruv/Anirudhh whether "cumulative disclosure escalation" is the intended risk signal for
+4. Confirm with the team whether "cumulative disclosure escalation" is the intended risk signal for
    `MT_App` — determines if this needs a prompt fix or is genuine task ambiguity
 5. Still open: which judge model produced CNFinBench's original labels (tracked in
    `RESULTS_SUMMARY.md`)

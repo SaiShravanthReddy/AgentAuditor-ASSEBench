@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Independently verify FinVault v3's anonymization actually removes case_id/attack-type leakage.
 
-Xiaoyu's v3 (finvault_output_full1064_v3_anonymized/) replaces case_id everywhere with opaque
+the v3 data provider's export (finvault_output_full1064_v3_anonymized/) replaces case_id everywhere with opaque
 tokens (case_0347 etc.) and keeps the real case_id in a separate case_id_mapping.json, not
 embedded in the trajectory data. This checks that claim against the raw trajectories.jsonl rather
 than trusting it, per the leakage mechanism found in v2: case_id (which embeds the attack

@@ -12,7 +12,7 @@ Variants:
     there is no natural safe/unsafe mapping here. Uses defended=1/benign=0 (attack-attempt-detection
     framing: "was this interaction subject to a manipulation attempt, regardless of outcome" - a
     genuinely different question from the other 3 variants' "did harm occur"). Decided directly
-    (not deferred to Prof. Ivan) after checking the data: manipulation-style surface markers
+    (not deferred to the project lead) after checking the data: manipulation-style surface markers
     ("[System Notification]", "CASE-REF", "special approval channel", etc.) appear at nearly
     identical rates in benign (68.2%) and defended (65.6%) prompts, so this is not a trivially-easy
     surface-pattern-matching task. Critically, this variant's `goal` prompt text is REWORDED (see
@@ -132,7 +132,7 @@ def main():
         goal_override=BENIGN_V_DEFENDED_GOAL,
     )
 
-    # 5. benign vs malicious - per Anirudhh/Ivan's actual framing (confirmed over Slack): uses the
+    # 5. benign vs malicious - per the team's actual framing (confirmed): uses the
     #    FULL dataset (all 1064 records, not a filtered subset like variant 4), with defended AND
     #    attack_success pooled together as "malicious" (1) vs benign (0) - "was this interaction
     #    malicious at all, regardless of outcome". Reworded goal for the same reason as variant 4:

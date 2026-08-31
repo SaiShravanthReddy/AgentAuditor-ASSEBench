@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
-"""Filter guardrail-blocked conversations out of a CNFinBench evaluation.json, per Anirudhh's
+"""Filter guardrail-blocked conversations out of a CNFinBench evaluation.json, per the team's
 row-index lists (one JSON array of ints per condition x subset, e.g. harmful_MT_App_blocked_rows.json).
 
-Ivan wants AgentAuditor metrics specifically on the conversations that do NOT get blocked by
-target-model guardrails, for the Citibank presentation - this produces the filtered input for that.
+The team wants AgentAuditor metrics specifically on the conversations that do NOT get blocked by
+target-model guardrails, for a stakeholder presentation - this produces the filtered input for that.
 
 Join key: each record in the source evaluation.json has explicit `row_index` and `dataset`
 (MT_App/MT_Cog/MT_Inter) fields - a record is dropped iff its row_index appears in the blocked-rows
 file matching its own dataset. This is NOT positional filtering (list index) - deliberately, since
 row_index is an explicit field and using it directly avoids any risk of a record-ordering mismatch
-between this source file and whatever Anirudhh indexed against.
+between this source file and whatever the row-index lists were indexed against.
 
 Refuses to run (loudly, not silently) if any source record is missing `row_index`, UNLESS `id` can
 be verified to reliably substitute for it (see --derive-row-index-from-id): this exact missing-field

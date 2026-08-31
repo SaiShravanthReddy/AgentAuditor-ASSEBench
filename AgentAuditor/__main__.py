@@ -19,12 +19,12 @@ dataset_fullname = {
     'cnfinbench-pooled': 'cnfinbench-pooled',
     'cnfinbench-harmless': 'cnfinbench-harmless',
     'cnfinbench-harmful': 'cnfinbench-harmful',
-    # Guardrail-filtered variants (excludes conversations Anirudhh identified as blocked by the
-    # target model's own guardrails, per CNFinBench/filter_blocked_rows.py) - for Ivan's Citibank
+    # Guardrail-filtered variants (excludes conversations identified as blocked by the
+    # target model's own guardrails, per CNFinBench/filter_blocked_rows.py) - for a stakeholder
     # presentation. Harmless's local source data was missing row_index; resolved by verifying `id`
     # forms an exact 1..N sequence per subset (no gaps/duplicates) and deriving row_index from it
     # (--derive-row-index-from-id) rather than waiting on a fresh data pull - 301 kept records,
-    # independently cross-checked against Ruihan's own filtered count (same 301) before trusting it.
+    # independently cross-checked against a separately-computed filtered count (same 301) before trusting it.
     'cnfinbench-harmful-unblocked': 'cnfinbench-harmful-unblocked',
     'cnfinbench-harmless-unblocked': 'cnfinbench-harmless-unblocked',
     # 'finvault-full' (v2-based) is deliberately NOT registered here anymore - its converted file
@@ -44,12 +44,12 @@ dataset_fullname = {
     'finvault-v3-fixed-defended-v-attack': 'finvault-v3-fixed-defended-v-attack',
     'finvault-v3-fixed-benign-v-attack': 'finvault-v3-fixed-benign-v-attack',
     'finvault-v3-fixed-benign-v-defended': 'finvault-v3-fixed-benign-v-defended',
-    # Anirudhh/Ivan's actual "was this malicious at all" framing (confirmed over Slack 2026-07-30):
+    # The team's actual "was this malicious at all" framing (confirmed 2026-07-30):
     # full 1064-record dataset, defended+attack_success pooled as "malicious" (1) vs benign (0) - NOT
     # the same as benign-v-defended above, which excludes attack_success entirely.
     'finvault-v3-fixed-benign-v-malicious': 'finvault-v3-fixed-benign-v-malicious',
-    # v5 (Xiaoyu's finvault_output_v5_final, leak-fixed via the same fix_v3_leakage.py mechanism -
-    # see FinVault/README.md), priority-scoped to just the 2 questions Anirudhh/Ivan confirmed matter
+    # v5 (finvault_output_v5_final, leak-fixed via the same fix_v3_leakage.py mechanism -
+    # see FinVault/README.md), priority-scoped to just the 2 questions the team confirmed matter
     # (2026-08-10): "did the attack succeed" and "was it malicious at all". Built by
     # FinVault/build_comparison_variants.py --source-name finvault-v5-fixed.
     'finvault-v5-fixed-full': 'finvault-v5-fixed-full',

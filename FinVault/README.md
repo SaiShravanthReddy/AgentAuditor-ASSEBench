@@ -12,7 +12,7 @@ v3-anonymized) all had real label-leaking data and should not be used for a real
 
 - `data/` — raw FinVault source data (gitignored). Currently holds, side by side:
   `finvault_output_full1064/` (v1), `finvault_output_full1064_v2/` (v2),
-  `finvault_output_full1064_v3_anonymized/` (Xiaoyu's v3 export, incompletely anonymized),
+  `finvault_output_full1064_v3_anonymized/` (the v3 data provider's export, incompletely anonymized),
   `finvault_output_full1064_v3_fixed/` (this repo's fix on top of v3 — **use this one**).
 - `finvault_to_agentauditor.py` — converter from FinVault's schema to AgentAuditor's ASSEBench
   input schema (`id`/`profile`/`contents`/`label`), analogous to
@@ -41,7 +41,7 @@ v3-anonymized) all had real label-leaking data and should not be used for a real
 |---|---|---|
 | v1 | Original export; no `task_prompt`, needed a 3-fix join against the public FinVault repo's `sandbox/` files to recover prompt text (see "Why FinVault's saved output needs a two-source join" below) | Historical only |
 | v2 | Added `task_prompt` and per-step `observation` directly in `trajectories.jsonl`, removing the need for the v1 join | Superseded — real case_id leaked in prompt text, see below |
-| v3 ("anonymized") | Xiaoyu's pass replacing case_id with opaque `case_NNNN` tokens + a `case_id_mapping.json` back-reference, meant to fix the v2 leak | **Not actually leakage-free** — see below |
+| v3 ("anonymized") | the data provider's pass replacing case_id with opaque `case_NNNN` tokens + a `case_id_mapping.json` back-reference, meant to fix the v2 leak | **Not actually leakage-free** — see below |
 | v3-fixed | This repo's `fix_v3_leakage.py` output, closing the gaps v3 left open | **Use this one** |
 
 v1 and v2 are *not* the same underlying rollout (cross-checked all 1064 matching records: 27
@@ -78,7 +78,7 @@ data rather than trusting the claim:
    different `task_prompt`, different `outcome`) — the mapping collapses all of them onto the same
    opaque token, so it's not safe to use directly as a source of unique ids.
 
-**`fix_v3_leakage.py` fixes #1 and #2** (not by reusing Xiaoyu's mapping — a fresh, guaranteed-unique
+**`fix_v3_leakage.py` fixes #1 and #2** (not by reusing the original mapping — a fresh, guaranteed-unique
 `case_fixed_NNNN` id is assigned per record instead, sidestepping the mapping's collision bug; the
 mapping is only used as a source of "which strings are real case ids to scrub from text"). It runs
 two passes: an exact-match pass against every known real id, and a generic `ATTACK_V\d+_\d+`/
@@ -105,7 +105,7 @@ leakage**, so it's deliberately left untouched:
   too late to change the outcome. This reads as a tool reacting to an observed transaction pattern,
   not a pre-scripted spoiler.
 
-If reusing this as a training/eval signal in the future, worth re-confirming with Xiaoyu whether
+If reusing this as a training/eval signal in the future, worth re-confirming with the data provider whether
 this correlation profile is deliberate sandbox design — but for judge-input purposes, keying off
 this text would not give a judge a meaningful shortcut (worse than reasoning about the trajectory,
 given how often it's silent during real successes).

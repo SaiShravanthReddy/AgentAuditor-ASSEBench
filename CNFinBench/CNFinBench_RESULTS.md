@@ -93,9 +93,9 @@ Audited the prose fallback specifically for negation errors (e.g. "this is **not
 
 ## Guardrail-filtered results (harmful-unblocked / harmless-unblocked)
 
-Ivan requested AgentAuditor metrics specifically on the CNFinBench conversations that do **not**
-get blocked by the target model's own guardrails (row indices identified by Anirudhh, one blocked-
-rows list per condition × subset), for the Citibank presentation. This is a genuinely different
+The team requested AgentAuditor metrics specifically on the CNFinBench conversations that do **not**
+get blocked by the target model's own guardrails (blocked-row indices identified separately, one
+list per condition × subset), for a stakeholder presentation. This is a genuinely different
 question from the original pooled/harmful/harmless numbers above — those measure performance on
 *all* conversations; this measures performance specifically on the harder subset that made it past
 the target model's own defenses.
@@ -112,9 +112,9 @@ the target model's own defenses.
   available judges — `qwen3_5`, `qwen3_5_nothink`, `gpt_oss`, `gemma_3`, `llama` — that was both
   complete across all 3 subsets *and* had `row_index`; verified directly, not assumed, since `qwen3_5`
   looked preferable but its harmless `Inter.json` was confirmed incomplete, 14/171 records).
-  Cross-checked against an independent record-by-record filter Ruihan produced from a different
-  source (her own "trace format" conversion): harmless matched exactly (301/301); harmful initially
-  diverged by 60+ records (an off-by-one in her row indexing), resolved after a second pass — final
+  Cross-checked against an independent record-by-record filter produced from a different
+  source (a separate "trace format" conversion): harmless matched exactly (301/301); harmful initially
+  diverged by 60+ records (an off-by-one in that row indexing), resolved after a second pass — final
   count now matches exactly (180/180) by direct id comparison, not just totals.
 
 ### Validity notes
@@ -132,8 +132,8 @@ the target model's own defenses.
   coverage (validity note #2 above): the safety-judge became unable to judge the most extreme
   content.
 - **Original ground-truth judge for the pre-existing (non-guardrail-filtered) numbers above is still
-  unconfirmed** — asked Dhruv which of the 5 judge models produced the `final_score` used
-  throughout this whole file; not yet answered, doesn't block the guardrail-filtered results below
+  unconfirmed** — pending team confirmation on which of the 5 judge models produced the
+  `final_score` used throughout this whole file; not yet answered, doesn't block the guardrail-filtered results below
   (which use a specifically-identified judge, `llama` for harmless / local data with confirmed
   `row_index` for harmful) but is still an open question for the *original* pooled/harmful/harmless
   numbers.

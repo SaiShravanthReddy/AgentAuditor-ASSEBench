@@ -6,7 +6,7 @@
 
 ## Confidence / AUROC / AUPRC re-run (2026-08-11/12) — current numbers
 
-Per Ivan's confirmed decision to use self-reported LLM confidence (not logprobs) for AUROC/AUPRC,
+Per the team's confirmed decision to use self-reported LLM confidence (not logprobs) for AUROC/AUPRC,
 added a `confidence` field (0.0-1.0) to the judge prompt and re-ran every dataset below. All numbers
 in this section are **independently re-verified** — pulled the raw per-item output files and
 recomputed confusion matrices / AUROC / AUPRC from scratch (not just trusting `eval.py`'s own
@@ -38,7 +38,7 @@ actually reflect the intended question; don't compare them to the historical Q2 
 
 ### Fix validation (2026-08-24) — retrieval/demo-generation fixes, tested on v3 Q2
 
-Diagnostic investigation into *why* AgentAuditor underperforms (initiated by Anirudhh) found two
+Diagnostic investigation into *why* AgentAuditor underperforms found two
 concrete, code-level root causes for Q2's miscalibration, both now fixed and pushed:
 
 - **Finding 1 / Fix 1**: `demo.py`'s chain-of-thought generation and `infer_emb.py`'s few-shot Q/A
@@ -93,7 +93,7 @@ still carried real signal (AUROC 0.72-0.80); here there's barely any signal at a
 
 ---
 
-## FinVault — 2 analyses (per Anirudhh/Ivan's framing)
+## FinVault — 2 analyses (per the team's agreed framing)
 
 *Historical (pre-confidence-field, and Q2 predates the goal-prompt bug fix) — see the
 "Confidence / AUROC / AUPRC re-run" section above for current numbers.*
@@ -152,6 +152,6 @@ Removing conversations blocked by the target model's own guardrails, to see how 
 ---
 
 ## Open items (not yet resolved)
-- Which judge model produced the *original* CNFinBench ground-truth labels — ruled out GPT-OSS, likely Qwen, unconfirmed (waiting on Dhruv).
+- Which judge model produced the *original* CNFinBench ground-truth labels — ruled out GPT-OSS, likely Qwen, unconfirmed (pending team confirmation).
 - FinVault self-leakage: checked, clean (0 leaked items across all 5 comparisons).
 - CNFinBench self-leakage: real, now excluded from these numbers (23 harmful-unblocked, 49 harmless-unblocked items excluded).

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fix the two mechanical case_id leaks found in FinVault v3 ("anonymized") that Xiaoyu's own
+"""Fix the two mechanical case_id leaks found in FinVault v3 ("anonymized") that the data provider's own
 anonymization pass missed - NOT the in-band tool-verdict leak (e.g. "detected potential
 violation: Transaction Structuring"), which is a separate, judgment-call question (is that
 legitimate simulated environment feedback, or a scripted label-echo?) deliberately left alone here.
@@ -20,7 +20,7 @@ IMPORTANT - v3's own case_id_mapping.json is NOT used as the source of new ids h
 a real correctness bug: it's keyed by the bare `case_id` string, but 43 case_id strings (e.g.
 "ATTACK_V1_001") are shared by multiple genuinely distinct records (different scenario_id,
 different task_prompt, different outcome - verified, not assumed) across different scenarios/case
-types. Xiaoyu's mapping collapses all of them onto the same opaque token (e.g. all 4
+types. the original mapping collapses all of them onto the same opaque token (e.g. all 4
 "ATTACK_V1_001" records -> "case_0744"), which would silently merge distinct records' identities if
 reused directly as our unique id. Instead, this script:
   - Assigns each output record its own fresh, guaranteed-unique id (by line position), independent
