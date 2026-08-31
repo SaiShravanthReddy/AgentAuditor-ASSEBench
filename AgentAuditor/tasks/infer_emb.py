@@ -1,3 +1,16 @@
+"""Stage 4 of 6: memory retrieval.
+
+For every record in the full dataset (AgentAuditor/data/<dataset_fullname>.json), embeds it and
+finds the k=3 most similar cluster representatives from demo_fixed.json (two-stage: top-N by
+content similarity, optionally re-ranked by a weighted scenario/risk/failure score), attaching
+their Q/A chain-of-thought as few-shot demos. Excludes reference records with invalid/unrepaired
+chain-of-thought from candidacy (see demo_repair.py), and excludes a record from retrieving itself
+when it's also a cluster representative. Uses each record's own `goal` field (if present) when
+building the demo Q text shown to the judge, matching infer.py's judge-facing prompt. Writes
+AgentAuditor/temp/<dataset>/k3.json, the input to infer.py. No LLM calls in this stage (embedding
+model only) - it aborts if >=50% of records get zero demos, a known symptom of a stale/collided
+embedding cache.
+"""
 import json
 import numpy as np
 import pickle

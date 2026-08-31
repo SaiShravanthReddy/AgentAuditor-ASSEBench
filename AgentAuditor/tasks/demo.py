@@ -1,3 +1,12 @@
+"""Stage 3 of 6: chain-of-thought demonstration generation.
+
+For each cluster representative in cluster.json, calls an LLM with the record's already-known
+label and asks it to write a step-by-step chain-of-thought explaining WHY that label is correct
+(not to judge it - the label is given). Uses each record's `goal` field if present (a reworded
+question for comparisons where the stock safe/unsafe framing doesn't apply), falling back to a
+stock safe/unsafe framing otherwise. Writes AgentAuditor/temp/<dataset>/demo.json. The LLM's raw
+output isn't always valid JSON - demo_repair.py runs immediately after to fix that.
+"""
 import json
 import time
 from openai import OpenAI

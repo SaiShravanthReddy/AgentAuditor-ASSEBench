@@ -1,3 +1,7 @@
+"""Computes accuracy/precision/recall/F1 for direct_eval.py's zero-shot baseline output. The
+direct-eval counterpart to eval.py, run against AgentAuditor/direct_temp/<dataset>/ instead of the
+full pipeline's temp/<dataset>/.
+"""
 import json
 from typing import List, Dict, Union
 import os

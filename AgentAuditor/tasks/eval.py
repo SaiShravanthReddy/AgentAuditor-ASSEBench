@@ -1,3 +1,11 @@
+"""Stage 6 of 6: scoring.
+
+Reads AgentAuditor/temp/<dataset>/output-k3_corrected.json, extracts each record's predicted label
+(trying a broad set of known key names the judge has used across models/prompts) and, if present,
+its self-reported confidence field. Prints accuracy/precision/recall/F1 plus AUROC/AUPRC (computed
+from confidence, when at least 2 items across both classes have a usable value) and a confusion
+matrix. No files written - console output only.
+"""
 import json
 from typing import Tuple, List, Optional, Dict, Any
 import os
