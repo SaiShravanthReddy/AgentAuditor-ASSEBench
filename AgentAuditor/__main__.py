@@ -49,11 +49,13 @@ dataset_fullname = {
     # the same as benign-v-defended above, which excludes attack_success entirely.
     'finvault-v3-fixed-benign-v-malicious': 'finvault-v3-fixed-benign-v-malicious',
     # v5 (finvault_output_v5_final, leak-fixed via the same fix_v3_leakage.py mechanism -
-    # see FinVault/README.md), priority-scoped to just the 2 questions the team confirmed matter
-    # (2026-08-10): "did the attack succeed" and "was it malicious at all". Built by
-    # FinVault/build_comparison_variants.py --source-name finvault-v5-fixed.
+    # see FinVault/README.md). Built by FinVault/build_comparison_variants.py --source-name
+    # finvault-v5-fixed. Originally priority-scoped (2026-08-10) to just 'full' and
+    # 'benign-v-malicious'; 'benign-v-defended' added later to re-test Fix 1/2/3 on the
+    # deprioritized comparison it was originally designed for (see AGENTAUDITOR_DIAGNOSIS.md).
     'finvault-v5-fixed-full': 'finvault-v5-fixed-full',
     'finvault-v5-fixed-benign-v-malicious': 'finvault-v5-fixed-benign-v-malicious',
+    'finvault-v5-fixed-benign-v-defended': 'finvault-v5-fixed-benign-v-defended',
 }
 
 if __name__ == "__main__":
