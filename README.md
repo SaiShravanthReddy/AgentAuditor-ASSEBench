@@ -77,6 +77,9 @@ AgentAuditor-ASSEBench/
 ├── 📄 README.md                        # Project documentation
 ├── 📄 LICENSE                          # Apache 2.0 license
 ├── 📄 requirements.txt                  # Python dependencies
+├── 📄 requirements-dev.txt             # Adds pytest, for tests/
+├── 📄 pytest.ini                       # pytest configuration
+├── 🧪 tests/                           # Unit tests for deterministic pipeline logic (no network/model calls)
 ├── 📄 RESULTS_SUMMARY.md               # Cross-benchmark results summary (FinVault + CNFinBench)
 ├── 📄 AGENTAUDITOR_DIAGNOSIS.md         # Root-cause findings and fixes for known miscalibration issues
 ├── 📥 fetch_data.py                    # Downloads dataset JSON files from the data-v1 GitHub Release
@@ -268,6 +271,21 @@ Results will be saved in the respective output directories. Key metrics include:
 - **Accuracy**: Overall correctness of safety assessments
 - **Precision/Recall**: Fine-grained performance analysis
 - **F1-Score**: Balanced performance measure
+
+## 🧪 Testing
+
+There is no end-to-end test suite for the pipeline itself (correctness there is checked by running
+a stage and inspecting its output/metrics against real data - see `AGENTAUDITOR_DIAGNOSIS.md` for
+how several real bugs were actually found this way). There **is** a unit test suite in `tests/`
+covering the pure, deterministic logic in `AgentAuditor/tasks/` - output-key parsing
+(`eval.py`), chain-of-thought validity checking (`demo_repair.py`), goal-aware prompt building
+(`infer.py`, `demo.py`), and retrieval/self-exclusion logic (`infer_emb.py`). None of it makes a
+network call or loads a real model. Run it with:
+
+```bash
+pip install -r requirements-dev.txt
+pytest
+```
 
 ## 📄 Citation
 
