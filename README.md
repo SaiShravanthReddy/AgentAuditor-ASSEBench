@@ -106,8 +106,8 @@ AgentAuditor-ASSEBench/
 │       ├── demo_repair.py              # CoT validation and repair
 │       ├── infer_emb.py                # Embedding-based retrieval
 │       ├── infer.py                    # Few-shot inference engine
-│       ├── infer_fix1.py               # JSON parsing and correction
-│       ├── infer_fix2.py               # LLM-based output refinement
+│       ├── infer_json_repair.py        # Mechanical JSON parsing and correction (no LLM call)
+│       ├── infer_llm_repair.py         # LLM-based fallback repair for what infer_json_repair.py can't fix
 │       ├── eval.py                     # Performance evaluation
 │       ├── direct_eval.py              # Zero-shot baseline evaluation
 │       └── direct_metric.py            # Baseline metrics calculation
@@ -167,7 +167,7 @@ The complete pipeline consists of six sequential stages:
 | **2️⃣ Clustering** | `cluster.py` | Identify representative cases | Annotated interactions | Cluster representatives for demonstrations |
 | **3️⃣ Demo Generation** | `demo.py` + `demo_repair.py` | Create & validate CoT examples | Representative cases | High-quality CoT demonstrations |
 | **4️⃣ Retrieval** | `infer_emb.py` | Find relevant experiences | Test cases + demo pool | Test cases + similar examples |
-| **5️⃣ Inference** | `infer.py` + `infer_fix*.py` | Few-shot evaluation with CoT | Augmented test cases | Safety predictions with reasoning |
+| **5️⃣ Inference** | `infer.py` + `infer_json_repair.py` + `infer_llm_repair.py` | Few-shot evaluation with CoT | Augmented test cases | Safety predictions with reasoning |
 | **6️⃣ Evaluation** | `eval.py` | Performance analysis | Predictions vs ground truth | Metrics (Accuracy, F1, etc.) |
 
 ### 🎯 Direct Evaluation Baseline
