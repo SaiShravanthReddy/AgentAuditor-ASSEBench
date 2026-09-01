@@ -4,6 +4,7 @@ __pycache__/
 .DS_Store
 Thumbs.db
 desktop.ini
+.pytest_cache/
 AgentAuditor/temp/
 CNFinBench/data/
 FinVault/data/
