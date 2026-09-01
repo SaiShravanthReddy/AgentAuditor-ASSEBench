@@ -13,6 +13,17 @@
 #SBATCH --gres=gpu:1
 #SBATCH --partition=hpg-turin
 
+# sbatch runs this script in a fresh non-interactive shell that does NOT source ~/.bashrc, so
+# `python` isn't on PATH unless loaded here explicitly - see https://docs.rc.ufl.edu/quickstart/computation/
+# UF RC recommends Conda over a bare venv/pip install for dependency management - see
+# https://docs.rc.ufl.edu/software/conda_environments/. Personal env, not the /blue/iruchkin/share/
+# path - no write access to that shared envs directory (CondaError: Unable to create prefix
+# directory), so this is scoped to this user's own /blue space instead.
+module load conda
+conda activate /blue/iruchkin/<user>/.conda/envs/agentauditor
+
+export AGENTAUDITOR_RUN_ID="${SLURM_JOB_ID:-$(date +%Y%m%dT%H%M%S)}"
+
 # Sequentially run the following commands, remember to check successful completion of each step
 python -m AgentAuditor rjudge preprocess
 python -m AgentAuditor rjudge cluster
