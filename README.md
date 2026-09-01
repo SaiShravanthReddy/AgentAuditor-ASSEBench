@@ -79,6 +79,7 @@ AgentAuditor-ASSEBench/
 ├── 📄 requirements.txt                  # Python dependencies
 ├── 📄 RESULTS_SUMMARY.md               # Cross-benchmark results summary (FinVault + CNFinBench)
 ├── 📄 AGENTAUDITOR_DIAGNOSIS.md         # Root-cause findings and fixes for known miscalibration issues
+├── 📥 fetch_data.py                    # Downloads dataset JSON files from the data-v1 GitHub Release
 ├── 🚀 agent_auditor.sh                 # Main AgentAuditor pipeline script
 ├── 🎯 direct_eval.sh                   # Direct evaluation baseline script
 ├── 🎨 assets/                          # Visual assets
@@ -88,10 +89,10 @@ AgentAuditor-ASSEBench/
 │   ├── __init__.py                     # Package initialization
 │   ├── __main__.py                     # CLI entry point (python -m AgentAuditor)
 │   ├── 📊 data/                        # Training and configuration data
-│   │   ├── agentharm.json              # AgentHarm dataset
-│   │   ├── AgentJudge-*.json           # AgentJudge dataset variants
-│   │   ├── rjudge.json                 # RJudge dataset
-│   │   └── fewshot.txt                 # Few-shot CoT examples
+│   │   ├── agentharm.json              # AgentHarm dataset (fetched via fetch_data.py, not in git)
+│   │   ├── AgentJudge-*.json           # AgentJudge dataset variants (fetched, not in git)
+│   │   ├── rjudge.json                 # RJudge dataset (fetched, not in git)
+│   │   └── fewshot.txt                 # Few-shot CoT examples (tracked normally)
 │   ├── ⚙️ params/                      # Pre-computed parameters
 │   │   ├── clus_param.pkl              # Clustering parameters (FINCH)
 │   │   └── infer_param.pkl             # Inference parameters (embeddings)
@@ -214,8 +215,12 @@ bash direct_eval.sh
 
 ```bash
 # Clone the repository
-git clone https://github.com/Astarojth/AgentAuditor-ASSEBench.git
+git clone https://github.com/SaiShravanthReddy/AgentAuditor-ASSEBench.git
 cd AgentAuditor-ASSEBench
+
+# Fetch the dataset JSON files (hosted as a GitHub Release, not in git history - see
+# fetch_data.py's own docstring for why). Requires the GitHub CLI (`gh`), authenticated.
+python3 fetch_data.py
 
 # Install dependencies
 pip install -r requirements.txt
