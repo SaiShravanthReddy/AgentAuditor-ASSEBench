@@ -4,8 +4,8 @@ For each record in k3.json, builds the final judge prompt (the record's `content
 retrieved few-shot demos + its `goal` question, falling back to a stock safe/unsafe framing if no
 custom goal is present + a self-reported confidence instruction) and calls the judge LLM. Writes
 AgentAuditor/temp/<dataset>/output-k3.json. The judge's raw output isn't always valid JSON -
-infer_fix1.py and infer_fix2.py run immediately after (as part of this same 'infer' stage) to
-repair that, first mechanically then via a second LLM call.
+infer_json_repair.py and infer_llm_repair.py run immediately after (as part of this same 'infer'
+stage) to repair that, first mechanically then via a second LLM call.
 """
 import json
 import time

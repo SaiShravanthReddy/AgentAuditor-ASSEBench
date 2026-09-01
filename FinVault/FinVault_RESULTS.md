@@ -52,7 +52,7 @@ all 5 — see validity note #1).
 ## Setup
 
 - **Model**: `gpt-oss-20b`, served via UF's AI gateway (OpenAI-compatible endpoint), used for every
-  LLM-calling pipeline stage (preprocess, demo, demo_repair, infer, infer_fix2).
+  LLM-calling pipeline stage (preprocess, demo, demo_repair, infer, infer_llm_repair).
 - **Data**: `finvault_output_full1064_v3_fixed` — see `FinVault/README.md`'s "Data versions" and
   "Leakage investigation" sections for how this was derived from the v3 data export and what was
   fixed.

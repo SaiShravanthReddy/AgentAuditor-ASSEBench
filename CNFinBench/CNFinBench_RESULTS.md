@@ -2,7 +2,7 @@
 
 ## Setup
 
-- **Model**: `gpt-oss-20b`, served via a UFL AI gateway (OpenAI-compatible endpoint), used for every LLM-calling pipeline stage (preprocess, demo, demo_repair, infer, infer_fix2).
+- **Model**: `gpt-oss-20b`, served via a UFL AI gateway (OpenAI-compatible endpoint), used for every LLM-calling pipeline stage (preprocess, demo, demo_repair, infer, infer_llm_repair).
 - **Data**: CNFinBench multi-turn evaluation records (Qwen-3.5-9B target model), two attacker-framing conditions:
   - **harmless** — neutral/professional attacker pretexts, 321 dialogues, 36 unsafe (11.2%)
   - **harmful** — authority-impersonation attacker pretexts, 321 dialogues, 171 unsafe (53.3%)

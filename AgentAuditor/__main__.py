@@ -85,8 +85,8 @@ if __name__ == "__main__":
             pass
         case 'infer':
             from .tasks.infer import infer_main
-            from .tasks.infer_fix1 import fix1_main
-            from .tasks.infer_fix2 import fix2_main
+            from .tasks.infer_json_repair import fix1_main
+            from .tasks.infer_llm_repair import fix2_main
             infer_main(dataset)
             fix1_main(dataset)
             fix2_main(dataset)
