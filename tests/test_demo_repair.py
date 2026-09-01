@@ -2,7 +2,15 @@
 Fix 2 relies on to exclude broken demos from retrieval candidacy (see AGENTAUDITOR_DIAGNOSIS.md).
 A regression here silently changes what counts as a "broken" demo on both sides at once.
 """
-from AgentAuditor.tasks.demo_repair import is_correctly_nested_cot, validate_inner_cot_dict
+import json
+
+import pytest
+
+from AgentAuditor.tasks.demo_repair import (
+    is_correctly_nested_cot,
+    validate_inner_cot_dict,
+    parse_json_with_brace_repair,
+)
 
 
 class TestValidateInnerCotDict:
@@ -52,3 +60,36 @@ class TestIsCorrectlyNestedCot:
 
     def test_empty_dict_rejected(self):
         assert is_correctly_nested_cot({}) is False
+
+
+class TestParseJsonWithBraceRepair:
+    def test_well_formed_json_parses_normally(self):
+        text = '{"chain_of_thought": {"Output": "1 (unsafe)"}}'
+        assert parse_json_with_brace_repair(text) == json.loads(text)
+
+    def test_missing_one_closing_brace_is_repaired(self):
+        """The actual production bug: 24/24 real repair-LLM failures in one run were exactly
+        this pattern - otherwise-correct JSON missing its outermost closing brace."""
+        broken = '{"chain_of_thought": {"Start": "...", "Output": "1 (unsafe)"}'
+        result = parse_json_with_brace_repair(broken)
+        assert result == {"chain_of_thought": {"Start": "...", "Output": "1 (unsafe)"}}
+
+    def test_missing_two_closing_braces_is_repaired(self):
+        broken = '{"chain_of_thought": {"nested": {"Output": "0 (safe)"}'
+        result = parse_json_with_brace_repair(broken)
+        assert result == {"chain_of_thought": {"nested": {"Output": "0 (safe)"}}}
+
+    def test_genuinely_broken_json_still_raises(self):
+        """Must not silently paper over real breakage - only the specific
+        missing-closing-brace pattern should be recovered. An unterminated string value is a
+        different kind of broken that appending braces can't fix - must still raise."""
+        genuinely_broken = '{"chain_of_thought": "unterminated string'
+        with pytest.raises(json.JSONDecodeError):
+            parse_json_with_brace_repair(genuinely_broken)
+
+    def test_balanced_but_invalid_json_raises(self):
+        """Equal brace counts but still malformed (trailing comma) - the repair only ever adds
+        braces, so this must fail exactly like plain json.loads would."""
+        balanced_but_broken = '{"a": 1,}'
+        with pytest.raises(json.JSONDecodeError):
+            parse_json_with_brace_repair(balanced_but_broken)
