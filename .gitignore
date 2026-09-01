@@ -15,6 +15,13 @@ CLAUDE.md
 # HiPerGator directly rather than through git. Covers both the main .json and its .meta.json
 # sidecar (which also ends in .json).
 AgentAuditor/data/finvault*.json
+# All other AgentAuditor/data/*.json and ASSEBench/*.json dataset files - hosted as GitHub Release
+# assets instead of git (GitHub blocks Git LFS uploads on public forks, and these run 500KB-21MB
+# each). Run `python3 fetch_data.py` after cloning to restore them. fewshot.txt is NOT a dataset
+# file and stays tracked normally.
+AgentAuditor/data/*.json
+ASSEBench/dataset/*.json
+ASSEBench/category/*/*.json
 # Local pipeline run artifacts (milestone/stdout logs from FinVault/run_finvault_pipeline.sh)
 finvault-*_milestones.log
 finvault-*_run_stdout.log
