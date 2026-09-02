@@ -2,6 +2,7 @@ import os
 import sys
 
 from dotenv import load_dotenv
+from .utils import timer
 
 # Load AGENTAUDITOR_API_KEY / AGENTAUDITOR_API_BASE / AGENTAUDITOR_MODEL_* from the repo-root
 # .env before any task module (which reads them at GPTConfig() construction time) is imported.
@@ -72,29 +73,29 @@ if __name__ == "__main__":
     match choice:
         case 'preprocess':
             from .tasks.preprocess import preprocess_main
-            preprocess_main(dataset, dataset_fullname[dataset])
+            timer.time_and_record('preprocess', preprocess_main, dataset, dataset, dataset_fullname[dataset])
         case 'cluster':
             from .tasks.cluster import cluster_main
-            cluster_main(dataset)
+            timer.time_and_record('cluster', cluster_main, dataset, dataset)
         case 'demo':
             from .tasks.demo import demo_main
             from .tasks.demo_repair import demo_repair_main
-            demo_main(dataset)
-            demo_repair_main(dataset)
+            timer.time_and_record('demo_generation', demo_main, dataset, dataset)
+            timer.time_and_record('demo_repair', demo_repair_main, dataset, dataset)
         case 'infer_emb':
             from .tasks.infer_emb import infer_emb_main
-            infer_emb_main(dataset, dataset_fullname[dataset])
+            timer.time_and_record('infer_emb', infer_emb_main, dataset, dataset, dataset_fullname[dataset])
             pass
         case 'infer':
             from .tasks.infer import infer_main
             from .tasks.infer_json_repair import fix1_main
             from .tasks.infer_llm_repair import fix2_main
-            infer_main(dataset)
-            fix1_main(dataset)
-            fix2_main(dataset)
+            timer.time_and_record('infer', infer_main, dataset, dataset)
+            timer.time_and_record('infer_fix1', fix1_main, dataset, dataset)
+            timer.time_and_record('infer_fix2', fix2_main, dataset, dataset)
         case 'eval':
             from .tasks.eval import eval_main
-            eval_main(dataset)
+            timer.time_and_record('eval', eval_main, dataset, dataset)
         case 'direct_eval':
             # Was wrongly calling direct_metric_main (metrics-only, reads an already-existing
             # output file) with 2 args when it only accepts 1 - direct_eval_main (the actual
@@ -104,10 +105,13 @@ if __name__ == "__main__":
             # case above (e.g. 'demo').
             from .tasks.direct_eval import direct_eval_main
             from .tasks.direct_metric import direct_metric_main
-            direct_eval_main(dataset, dataset_fullname[dataset])
-            direct_metric_main(dataset)
+            timer.time_and_record('direct_eval_query', direct_eval_main, dataset, dataset, dataset_fullname[dataset])
+            timer.time_and_record('direct_eval_metric', direct_metric_main, dataset, dataset)
         case 'direct_metric':
             from .tasks.direct_metric import direct_metric_main
-            direct_metric_main(dataset)
+            timer.time_and_record('direct_metric', direct_metric_main, dataset, dataset)
+        case 'timing_summary':
+            import json as _json
+            print(_json.dumps(timer.summarize_dataset_timings(dataset), indent=2))
         case _:
             raise ValueError("Invalid choice..")
