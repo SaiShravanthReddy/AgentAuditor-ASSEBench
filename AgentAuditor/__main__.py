@@ -57,6 +57,10 @@ dataset_fullname = {
     'finvault-v5-fixed-full': 'finvault-v5-fixed-full',
     'finvault-v5-fixed-benign-v-malicious': 'finvault-v5-fixed-benign-v-malicious',
     'finvault-v5-fixed-benign-v-defended': 'finvault-v5-fixed-benign-v-defended',
+    # Q1 "did the attack succeed" for v5 - converted file already existed in AgentAuditor/data/,
+    # just never registered here (unlike v3, which has this key). Needed for the 14-run
+    # FinVault-v5/CNFinBench x gpt-oss-20b/120b profiling pass (see project memory).
+    'finvault-v5-fixed-defended-v-attack': 'finvault-v5-fixed-defended-v-attack',
 }
 
 if __name__ == "__main__":
