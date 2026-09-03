@@ -80,8 +80,12 @@ AgentAuditor-ASSEBench/
 ├── 📄 requirements-dev.txt             # Adds pytest, for tests/
 ├── 📄 pytest.ini                       # pytest configuration
 ├── 🧪 tests/                           # Unit tests for deterministic pipeline logic (no network/model calls)
-├── 📄 RESULTS_SUMMARY.md               # Cross-benchmark results summary (FinVault + CNFinBench)
-├── 📄 AGENTAUDITOR_DIAGNOSIS.md         # Root-cause findings and fixes for known miscalibration issues
+├── 📁 results/                         # All results/report write-ups, repo-wide (see below)
+│   ├── RESULTS_SUMMARY.md              # Cross-benchmark results summary (FinVault + CNFinBench)
+│   ├── AGENTAUDITOR_DIAGNOSIS.md       # Root-cause findings and fixes for known miscalibration issues
+│   ├── PROFILING_RESULTS.md            # Per-stage timing/reliability profiling (CNFinBench + FinVault v5)
+│   ├── CNFinBench_RESULTS.md           # CNFinBench write-up: setup, validity notes, full results
+│   └── FinVault_RESULTS.md             # FinVault write-up: setup, validity notes, full results
 ├── 📥 fetch_data.py                    # Downloads dataset JSON files from the data-v1 GitHub Release
 ├── 🚀 agent_auditor.sh                 # Main AgentAuditor pipeline script
 ├── 🎯 direct_eval.sh                   # Direct evaluation baseline script
@@ -127,14 +131,12 @@ AgentAuditor-ASSEBench/
 │       ├── AgentJudge-security.json    # Security-focused evaluation
 │       └── AgentJudge-strict.json      # Strict evaluation criteria
 ├── 🏦 CNFinBench/                      # Benchmark extension: CNFinBench evaluation
-│   ├── CNFinBench_RESULTS.md           # Write-up: setup, validity notes, full results
 │   ├── cnfinbench_to_agentauditor.py   # Converter: CNFinBench schema -> AgentAuditor schema
 │   ├── cnfinbench_metrics.py           # Metrics (accuracy/F1/balanced acc/unsafe recall)
 │   ├── cnfinbench_detect_leakage.py    # Detects few-shot self-leakage in retrieval results
 │   ├── filter_blocked_rows.py          # Filters conversations blocked by target-model guardrails
 │   └── data/                           # Raw CNFinBench source data (gitignored, local only)
 └── 🏦 FinVault/                        # Benchmark extension: FinVault evaluation
-    ├── FinVault_RESULTS.md             # Write-up: setup, validity notes, full results
     ├── README.md                       # Data versions, leakage investigation, structure notes
     ├── finvault_to_agentauditor.py     # Converter: FinVault schema -> AgentAuditor schema
     ├── build_comparison_variants.py    # Builds pairwise label-comparison datasets from one source
@@ -275,7 +277,7 @@ Results will be saved in the respective output directories. Key metrics include:
 ## 🧪 Testing
 
 There is no end-to-end test suite for the pipeline itself (correctness there is checked by running
-a stage and inspecting its output/metrics against real data - see `AGENTAUDITOR_DIAGNOSIS.md` for
+a stage and inspecting its output/metrics against real data - see `results/AGENTAUDITOR_DIAGNOSIS.md` for
 how several real bugs were actually found this way). There **is** a unit test suite in `tests/`
 covering the pure, deterministic logic in `AgentAuditor/tasks/` - output-key parsing
 (`eval.py`), chain-of-thought validity checking (`demo_repair.py`), goal-aware prompt building

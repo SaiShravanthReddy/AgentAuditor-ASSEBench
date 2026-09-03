@@ -4,7 +4,7 @@
 # SLURM batch job with no one watching it live.
 #
 # Baseline per-record/per-stage rates below are measured from the actual CNFinBench run (see
-# CNFinBench/RESULTS.md) on gpt-oss-20b, not guessed: preprocess ~1.4s/record, cluster ~4.1s/record,
+# ../results/CNFinBench_RESULTS.md) on gpt-oss-20b, not guessed: preprocess ~1.4s/record, cluster ~4.1s/record,
 # demo ~23s/representative (~10% of records), infer_emb ~5.2s/record, infer ~3.5s/record (on the
 # ~90% of records that aren't cluster representatives). These are a starting estimate only - FinVault's
 # per-record content is meaningfully larger (median ~4.5KB vs CNFinBench's dialogues) so actual
