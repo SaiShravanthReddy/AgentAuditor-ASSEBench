@@ -425,7 +425,7 @@ class EmbeddingProcessor:
                 representative is also a member of the full query set it was drawn from, so without
                 this a query whose own dialogue was chosen as a cluster representative would very
                 likely retrieve itself (near-perfect content similarity) - self-leakage confirmed to
-                actually happen in production (see AGENTAUDITOR_DIAGNOSIS.md's CNFinBench section).
+                actually happen in production (see results/AGENTAUDITOR_DIAGNOSIS.md's CNFinBench section).
         """
         if not reference_embeddings or k <= 0:
              logger.debug("Reference embeddings empty or k <= 0, returning empty list.")

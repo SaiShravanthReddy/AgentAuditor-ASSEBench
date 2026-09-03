@@ -30,10 +30,11 @@ v3-anonymized) all had real label-leaking data and should not be used for a real
   CLI takes any `output-k3_corrected.json`/`k3.json` path, nothing CNFinBench-specific is
   hardcoded). No FinVault-specific fork exists yet; only create one if a real FinVault run
   surfaces judge-output-parsing quirks the current extractor doesn't handle (as happened
-  iteratively for CNFinBench — see `CNFinBench/RESULTS.md`). Note `cnfinbench_detect_leakage.py`
-  catches a *different* leakage mechanism (few-shot self-retrieval during `infer_emb`) than
-  anything described below — still needs to be run on any real FinVault results, v3-fixed or not.
-- `RESULTS.md` — results write-up, once a run completes
+  iteratively for CNFinBench — see `../results/CNFinBench_RESULTS.md`). Note
+  `cnfinbench_detect_leakage.py` catches a *different* leakage mechanism (few-shot self-retrieval
+  during `infer_emb`) than anything described below — still needs to be run on any real FinVault
+  results, v3-fixed or not.
+- `../results/FinVault_RESULTS.md` — results write-up, once a run completes
 
 ## Data versions
 

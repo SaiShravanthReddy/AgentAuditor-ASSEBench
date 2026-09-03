@@ -1,5 +1,5 @@
 """Tests for infer.py's combine_to_prompt() - the judge-facing prompt builder. Covers Fix 1 from
-AGENTAUDITOR_DIAGNOSIS.md: this previously ignored the record's `goal` field entirely, silently
+results/AGENTAUDITOR_DIAGNOSIS.md: this previously ignored the record's `goal` field entirely, silently
 using the stock safe/unsafe framing for every comparison including ones with a genuinely different
 question (e.g. FinVault's "was there a manipulation attempt" comparisons).
 """

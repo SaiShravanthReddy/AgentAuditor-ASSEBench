@@ -1,5 +1,5 @@
 """Tests for infer_emb.py's retrieval logic. Covers Fix 1 (goal-aware demo Q text) and Fix 3
-(self-exclusion) from AGENTAUDITOR_DIAGNOSIS.md - both confirmed happening on real production data
+(self-exclusion) from results/AGENTAUDITOR_DIAGNOSIS.md - both confirmed happening on real production data
 this session (a CNFinBench query retrieved itself as its own demo; FinVault Q2's demos asked the
 wrong question). Does NOT load the real embedding model (network/GPU-dependent) - a bare subclass
 skips EmbeddingProcessor's model-loading __init__ entirely, since none of this logic touches the

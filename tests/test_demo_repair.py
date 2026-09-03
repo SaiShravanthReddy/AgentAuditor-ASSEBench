@@ -1,5 +1,5 @@
 """Tests for demo_repair.py's chain-of-thought validity check - the exact function infer_emb.py's
-Fix 2 relies on to exclude broken demos from retrieval candidacy (see AGENTAUDITOR_DIAGNOSIS.md).
+Fix 2 relies on to exclude broken demos from retrieval candidacy (see results/AGENTAUDITOR_DIAGNOSIS.md).
 A regression here silently changes what counts as a "broken" demo on both sides at once.
 """
 import json

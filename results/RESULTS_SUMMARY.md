@@ -1,6 +1,6 @@
 # Summary: FinVault (2 analyses) + CNFinBench (filtered vs. unfiltered)
 
-*Full detail and reproduction steps: `FinVault/FinVault_RESULTS.md`, `CNFinBench/RESULTS.md`*
+*Full detail and reproduction steps: `FinVault_RESULTS.md`, `CNFinBench_RESULTS.md` (same folder)*
 
 ---
 

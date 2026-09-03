@@ -1,6 +1,6 @@
 """Tests for eval.py's output-parsing and metrics functions - the code with this session's own
 concrete bug history (ROOT_KEYS missing 'verdict'/'manipulation_attempt' caused 1062/1064 and
-1062/1064 items to be misreported as processing errors on real runs, see AGENTAUDITOR_DIAGNOSIS.md
+1062/1064 items to be misreported as processing errors on real runs, see results/AGENTAUDITOR_DIAGNOSIS.md
 and git history). These are pure functions - no I/O, no LLM calls - so they're fully testable.
 """
 import pytest
@@ -76,7 +76,7 @@ class TestExtractOutput:
 
     def test_new_key_regression_guard(self):
         """If this fails, a real key found in production (e.g. 'safe_or_unsafe', seen in
-        AGENTAUDITOR_DIAGNOSIS.md's CNFinBench investigation) was removed from ROOT_KEYS without
+        results/AGENTAUDITOR_DIAGNOSIS.md's CNFinBench investigation) was removed from ROOT_KEYS without
         a replacement - not necessarily wrong, but should be a deliberate decision, not silent."""
         expected_keys = {
             'output', 'finaloutput', 'finalsafetyscore', 'prediction', 'finaldecision', 'result',

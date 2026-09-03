@@ -1,5 +1,5 @@
 """Tests for demo.py's create_prompt() - builds the prompt used to generate each few-shot demo's
-chain-of-thought reasoning. Covers the other half of Fix 1 from AGENTAUDITOR_DIAGNOSIS.md: this
+chain-of-thought reasoning. Covers the other half of Fix 1 from results/AGENTAUDITOR_DIAGNOSIS.md: this
 previously always told the reasoning-generation LLM to explain "why is this safe/unsafe",
 regardless of what question the record's `goal` field actually asked (e.g. "was there a
 manipulation attempt") - producing demos that reasoned about the wrong thing entirely.

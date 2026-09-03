@@ -1,4 +1,8 @@
 .env
+# Any per-model/per-purpose credentials file (.env_20b, .env_120b, .env_all_keys, etc.) - wildcard
+# rather than an explicit list, so a newly created one is covered automatically instead of leaking
+# on the next `git add -A` until someone remembers to list it here.
+.env_*
 __pycache__/
 *.pyc
 .DS_Store
@@ -29,3 +33,6 @@ finvault-*_run_stdout.log
 # direct_eval's own output + diskcache directories (regenerated locally, not meant for git)
 AgentAuditor/direct_temp/
 cache/
+# Raw HiPerGator eval/timing_summary output pasted together for building results/PROFILING_RESULTS.md -
+# an intermediate working artifact, not a polished report; regenerable via collect_14_results.sh.
+results/results_14runs.txt
