@@ -178,7 +178,7 @@ def create_correction_prompt(fewshot_demos: List[Dict], problematic_output_str: 
 
 
 # --- Main Function Modified ---
-def fix_json_outputs_by_correction(input_json_path: str, error_ids: List[int], output_json_path: str, failed_items_path: str):
+def fix_json_outputs_by_correction(input_json_path: str, error_ids: List[Any], output_json_path: str, failed_items_path: str):
     """
     Reads JSON, identifies items by error_ids, and uses LLM to *correct*
     their existing 'output' field if malformed. Saves results.
@@ -301,17 +301,29 @@ def fix_json_outputs_by_correction(input_json_path: str, error_ids: List[int], o
         print("\nNo failed API calls recorded during correction attempts.")
 
 
+def find_malformed_ids(input_json_path: str) -> List[Any]:
+    """IDs of every item in input_json_path whose 'output' doesn't already pass
+    validate_output_format() - i.e. what infer_json_repair.py's mechanical repair couldn't fix and
+    still needs the LLM-based correction below."""
+    with open(input_json_path, 'r', encoding='utf-8') as f:
+        data = json.load(f)
+    return [item['id'] for item in data if not validate_output_format(item.get('output'))]
+
+
 def fix2_main(dataset):
     script_dir = os.path.dirname(os.path.abspath(__file__))
     INPUT_JSON = os.path.join(script_dir, f"../temp/{dataset}/output-k3_fixed.json")
     OUTPUT_JSON = os.path.join(script_dir, f"../temp/{dataset}/output-k3_corrected.json")
     FAILED_ITEMS_JSON = os.path.join(script_dir, f"../temp/{dataset}/failed_correction.json")
 
-    ERROR_IDS_TO_FIX = [
-        83, 102, 163, 189, 415, 648, 1438, 1492
-    ]
+    # Was previously a hardcoded list of bare integers ([83, 102, 163, ...]) left over from some
+    # earlier dev/test dataset - every real dataset here uses string IDs (e.g. "harmless-MT_App-1"),
+    # so that list never matched anything and this correction stage was silently a no-op on every
+    # run. Now computed from whichever items are actually still malformed.
+    error_ids = find_malformed_ids(INPUT_JSON)
+    print(f"Found {len(error_ids)} item(s) still needing LLM-based correction.")
 
     # Run the correction function
-    fix_json_outputs_by_correction(INPUT_JSON, ERROR_IDS_TO_FIX, OUTPUT_JSON, FAILED_ITEMS_JSON)
+    fix_json_outputs_by_correction(INPUT_JSON, error_ids, OUTPUT_JSON, FAILED_ITEMS_JSON)
 
     print("\nScript finished.")
