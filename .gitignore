@@ -33,6 +33,8 @@ finvault-*_run_stdout.log
 # direct_eval's own output + diskcache directories (regenerated locally, not meant for git)
 AgentAuditor/direct_temp/
 cache/
-# Raw HiPerGator eval/timing_summary output pasted together for building results/PROFILING_RESULTS.md -
-# an intermediate working artifact, not a polished report; regenerable via collect_14_results.sh.
-results/results_14runs.txt
+# Raw HiPerGator eval/timing_summary output collected while building results/PROFILING_RESULTS.md -
+# intermediate working artifacts, not polished reports; regenerable via the collect_*.sh scripts
+# used to build them. Wildcard rather than an explicit list so a newly pulled-down dump doesn't
+# need a new line here.
+results/results_*.txt
