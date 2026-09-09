@@ -97,6 +97,17 @@ if __name__ == "__main__":
             timer.time_and_record('infer', infer_main, dataset, dataset)
             timer.time_and_record('infer_fix1', fix1_main, dataset, dataset)
             timer.time_and_record('infer_fix2', fix2_main, dataset, dataset)
+        case 'infer_retry':
+            # Only useful after a partial 'infer' run left AgentAuditor/temp/<dataset>/failed.json
+            # non-empty (e.g. API errors under load) - retries just those items instead of infer's
+            # own from-scratch-every-time behavior, then reruns the repair stages since
+            # output-k3.json changed.
+            from .tasks.infer_retry_failed import retry_failed_main
+            from .tasks.infer_json_repair import fix1_main
+            from .tasks.infer_llm_repair import fix2_main
+            timer.time_and_record('infer_retry', retry_failed_main, dataset, dataset)
+            timer.time_and_record('infer_fix1', fix1_main, dataset, dataset)
+            timer.time_and_record('infer_fix2', fix2_main, dataset, dataset)
         case 'eval':
             from .tasks.eval import eval_main
             timer.time_and_record('eval', eval_main, dataset, dataset)
