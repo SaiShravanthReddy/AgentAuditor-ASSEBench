@@ -94,9 +94,9 @@ consistently (a labeling-methodology question, not just a model one)?
 
 ## Next steps
 
-1. ~~Re-test Fix 1+2 on v5's `benign-v-malicious`~~ DONE — generalizes on `benign-v-defended`
-   (recall/AUROC close to validated post-fix numbers), but `benign-v-malicious` itself showed a
-   surprising regression (see `results/PROFILING_RESULTS.md`'s known issues) — still open.
+1. ~~Re-test Fix 1+2 on v5's `benign-v-malicious`~~ DONE — showed a surprising regression on
+   `20b` relative to the validated post-fix baseline (see `results/PROFILING_RESULTS.md`'s known
+   issues) — still open.
 2. Improve `demo_repair.py`'s repair success rate
 3. ~~Try `gpt-oss-120b` on CNFinBench harmless~~ DONE — see above. Real improvement on some
    dimensions (Q2 recall 41.3%→80.0%), but not a clean fix for `MT_App`/`MT_Inter`.

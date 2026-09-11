@@ -28,7 +28,6 @@ class imbalance.
 | `finvault-v5-fixed-defended-v-attack` | Q1 | 120b | **83.6%** | **+27.9** | 87.9% | 81.9% | 84.8% | 0.893 | 0.890 | 952/957 |
 | `finvault-v5-fixed-benign-v-malicious` | Q2: Was it malicious at all? | 20b | 46.1% | −45.7 | 100% | 41.3% | 58.4% | 0.735 | 0.956 | 1043/1043 |
 | `finvault-v5-fixed-benign-v-malicious` | Q2 | 120b | **81.1%** | −10.6 | 99.2% | **80.0%** | 88.6% | **0.920** | 0.989 | 1040/1043 |
-| `finvault-v5-fixed-benign-v-defended`* | Fix 1/2/3 generalization check | 20b | 58.9% | −24.2 | 99.1% | 51.1% | 67.4% | 0.756 | 0.917 | 509/510 |
 | `cnfinbench-pooled` | Pooled harmful+harmless | 20b⚠️ | 72.8% | +4.5 | 66.7% | 28.6% | 40.0% | 0.674 | 0.464 | 596/642 |
 | `cnfinbench-pooled` | Pooled | 120b | 73.4% | +5.6 | 65.5% | 36.7% | 47.1% | 0.721 | 0.539 | 642/642 |
 | `cnfinbench-harmful` | Harmful subset | 20b⚠️ | 55.0% | −0.4 | 71.6% | 31.2% | 43.4% | 0.618 | 0.633 | 278/321 |
@@ -40,8 +39,7 @@ class imbalance.
 | `cnfinbench-harmless-unblocked` | Harmless, guardrail-filtered | 20b⚠️ | 88.3% | −0.7 | 25.0% | 3.2% | 5.7% | 0.550 | 0.132 | 281/281 |
 | `cnfinbench-harmless-unblocked` | Harmless-unblocked | 120b | 74.1% | **−14.3** | 13.6% | 22.9% | 17.0% | 0.566 | 0.139 | 301/301 |
 
-⚠️ = incomplete data, see the note above. *`benign-v-defended` was run as a targeted check of
-whether Fix 1/2/3 generalize beyond the dataset they were validated on — not run on `120b` yet.
+⚠️ = incomplete data, see the note above.
 
 ### Reading these results
 
@@ -120,4 +118,3 @@ on `120b` (3.6s to 119.8s across otherwise-similar datasets) is worth a closer l
 4. **`harmless-unblocked`'s `120b` regression relative to trivial baseline** — check whether this
    is a one-off or a real precision/recall tradeoff pattern worth understanding before treating
    `120b` as a strict upgrade.
-5. Run `finvault-v5-fixed-benign-v-defended` on `120b` too, for a complete comparison matrix.
