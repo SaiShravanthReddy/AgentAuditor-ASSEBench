@@ -38,3 +38,6 @@ cache/
 # used to build them. Wildcard rather than an explicit list so a newly pulled-down dump doesn't
 # need a new line here.
 results/results_*.txt
+# Internal Citi meeting decks - confidential, not meant for a public repo. Keep these local/shared
+# via Slack, not git.
+*.pptx
