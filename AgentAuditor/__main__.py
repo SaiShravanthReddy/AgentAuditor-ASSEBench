@@ -110,6 +110,6 @@ if __name__ == "__main__":
             timer.time_and_record('direct_metric', direct_metric_main, dataset, dataset)
         case 'timing_summary':
             import json as _json
-            print(_json.dumps(timer.summarize_dataset_timings(dataset), indent=2))
+            print(_json.dumps(timer.build_nested_run_timing_structure(dataset), indent=2))
         case _:
             raise ValueError("Invalid choice..")
