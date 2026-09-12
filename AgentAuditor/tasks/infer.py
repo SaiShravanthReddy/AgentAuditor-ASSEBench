@@ -5,6 +5,8 @@ from typing import Dict, List, Optional
 from tqdm import tqdm
 import os
 
+from ..utils import timer
+
 class GPTConfig:
     def __init__(self):
         self.API_KEY = os.environ.get("AGENTAUDITOR_API_KEY", "sk-xxxx")
@@ -82,6 +84,45 @@ CONFIDENCE_INSTRUCTION = (
 )
 
 
+def _append_round_messages(messages: List[Dict[str, str]], round_turns: List[Dict]) -> List[Dict[str, str]]:
+    """Append one conversation round to the message list used for the LLM call."""
+    for turn in round_turns:
+        if turn["role"] == "user":
+            if turn.get("content") is not None:
+                messages.append({"role": "user", "content": turn["content"]})
+        elif turn["role"] == "agent":
+            resp = ""
+            for k, v in turn.items():
+                if k != "role":
+                    resp += f"[{k.capitalize()}]: {v}\n"
+            messages.append({"role": "assistant", "content": resp})
+        elif turn["role"] == "environment":
+            messages.append({
+                "role": "user",
+                "content": f"[{turn['role'].upper()}]: {turn['content']}"
+            })
+    return messages
+
+
+def _build_prompt_messages(item: Dict, dataset: str) -> List[Dict[str, str]]:
+    """Build the message sequence for one item and record a per-round timing entry."""
+    messages: List[Dict[str, str]] = []
+    for round_index, round_turns in enumerate(item.get("contents", [])):
+        messages = timer.time_and_record(
+            "infer",
+            _append_round_messages,
+            dataset,
+            messages,
+            round_turns,
+            conversation_id=item.get("id"),
+            item_id=item.get("id"),
+            round_index=round_index,
+            metadata=f"{item.get('id')}_{round_index}",
+            run_metadata={"dataset": dataset},
+        )
+    return messages
+
+
 def combine_to_prompt(contents: List, fewshot_demos: List[Dict], goal: Optional[str] = None) -> str:
     """
     Combine contents and fewshot_demos into a QA format prompt
@@ -107,7 +148,7 @@ def combine_to_prompt(contents: List, fewshot_demos: List[Dict], goal: Optional[
     return "\n".join(prompt_parts)
 
 
-def process_json_file(input_file: str, intermediate_file: str, output_file: str, failed_items_file: str):
+def process_json_file(input_file: str, intermediate_file: str, output_file: str, failed_items_file: str, dataset: Optional[str] = None):
     """
     Process JSON file, call LLM API, and generate final output
 
@@ -116,7 +157,9 @@ def process_json_file(input_file: str, intermediate_file: str, output_file: str,
         intermediate_file: Intermediate JSON file path (contains combined_prompt)
         output_file: Final output JSON file path (contains LLM output)
         failed_items_file: JSON file path for failed items
+        dataset: dataset identifier used for timing metadata
     """
+    dataset = dataset or "unknown"
     try:
         # Read JSON file
         print("\nStarting to read input file...")
@@ -158,8 +201,31 @@ def process_json_file(input_file: str, intermediate_file: str, output_file: str,
             print(f"\n===== Processing item {i}/{len(intermediate_data)} =====")
             new_item = item.copy()
 
-            # Call LLM API
-            llm_output = llm_handler.call_llm_api(item['combined_prompt'], item['id'])
+            item_prompt_messages = timer.time_and_record(
+                "infer",
+                _build_prompt_messages,
+                dataset,
+                item,
+                dataset,
+                conversation_id=item.get("id"),
+                item_id=item.get("id"),
+                round_index=None,
+                metadata=f"{item.get('id')}_item",
+                run_metadata={"dataset": dataset},
+            )
+
+            llm_output = timer.time_and_record(
+                "infer",
+                llm_handler.call_llm_api,
+                dataset,
+                item['combined_prompt'],
+                item['id'],
+                conversation_id=item.get("id"),
+                item_id=item.get("id"),
+                round_index=None,
+                metadata=f"{item.get('id')}_api",
+                run_metadata={"dataset": dataset},
+            )
 
             # If API call failed completely, record it and continue to next item
             if llm_output is None:
@@ -232,4 +298,4 @@ def infer_main(dataset):
     intermediate_file = os.path.join(script_dir, f"../temp/{dataset}/intermediate.json")
     output_file = os.path.join(script_dir, f"../temp/{dataset}/output-k3.json")
     failed_items_file = os.path.join(script_dir, f"../temp/{dataset}/failed.json")
-    process_json_file(input_file, intermediate_file, output_file, failed_items_file)
+    process_json_file(input_file, intermediate_file, output_file, failed_items_file, dataset=dataset)
