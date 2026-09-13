@@ -217,7 +217,19 @@ def process_json_file(input_file: str, intermediate_file: str, output_file: str,
         else:
             print("\nNo failed items to save.")
 
-        print(f"\nProcessing complete! Final output saved to: {output_file}")
+        if final_data:
+            print(f"\nProcessing complete! Final output saved to: {output_file}")
+        else:
+            # Every item failed its API call - output_file (only ever written inside the
+            # per-item loop above, for items that got *some* response) was never created, even
+            # though the old unconditional message here used to claim it was. Confirmed root
+            # cause of a real incident: a dead/invalid API key made every call fail, and this
+            # message told the next pipeline stage (and the person reading the log) that
+            # everything was fine right before infer_json_repair.py failed with "input file not
+            # found" on a file that was never written.
+            print(f"\nERROR: Every item failed its API call - {output_file} was never created. "
+                  f"Check {failed_items_file} for why (an invalid/expired API key or wrong "
+                  f"endpoint is the most common cause - verify credentials before rerunning).")
 
         # Clean up intermediate file
         try:
