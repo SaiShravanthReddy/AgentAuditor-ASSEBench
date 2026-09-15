@@ -175,6 +175,10 @@ def build_nested_run_timing_structure(dataset: str, run_id: str | None = None) -
 
     Stage totals are accumulated across all raw timing records in the run. The run-level metadata is
     kept separate from stage metadata, and round identity remains in conversation_id + round_index.
+
+    Critical invariant for clean-run reporting: this routine must read the specific timing file for
+    the current run, never the most recently modified file in the directory. That prevents stale files
+    from previous jobs or datasets being silently merged into the active summary.
     """
 
     def empty_run_summary() -> Dict[str, Any]:
@@ -198,14 +202,11 @@ def build_nested_run_timing_structure(dataset: str, run_id: str | None = None) -
         return {key: rounded_value(value) for key, value in values.items()}
 
     out_dir = _ensure_output_dir(dataset)
-    paths = sorted(glob.glob(os.path.join(out_dir, "timings_*.json")))
-    if run_id is not None:
-        paths = [p for p in paths if f"timings_{run_id}" in p]
+    current_run_id = run_id or os.environ.get("AGENTAUDITOR_RUN_ID") or os.environ.get("SLURM_JOB_ID") or os.environ.get("SLURM_JOBID")
+    path = os.path.join(out_dir, f"timings_{current_run_id}.json") if current_run_id else None
 
-    if not paths:
+    if not path or not os.path.exists(path):
         return empty_run_summary()
-
-    path = paths[-1]
 
     try:
         with open(path, 'r', encoding='utf-8') as f:
