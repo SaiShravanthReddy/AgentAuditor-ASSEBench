@@ -104,5 +104,5 @@ consistently (a labeling-methodology question, not just a model one)?
    signal for `MT_App`~~ CONFIRMED via direct reading of real records (see above) — now reframed
    as: is the `MT_App` vs. `MT_Inter` boundary itself well-defined enough for a model to learn
    reliably? Worth a team conversation.
-5. Still open: which judge model produced CNFinBench's original labels (tracked in
-   `RESULTS_SUMMARY.md`)
+5. ~~Which judge model produced CNFinBench's original labels~~ RESOLVED: `Qwen/Qwen3.5-9B`,
+   confirmed via the raw data's own judge telemetry (see `RESULTS_SUMMARY.md`).
