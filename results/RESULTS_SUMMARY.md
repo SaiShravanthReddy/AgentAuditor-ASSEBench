@@ -152,6 +152,11 @@ Removing conversations blocked by the target model's own guardrails, to see how 
 ---
 
 ## Open items (not yet resolved)
-- Which judge model produced the *original* CNFinBench ground-truth labels — ruled out GPT-OSS, likely Qwen, unconfirmed (pending team confirmation).
+- ~~Which judge model produced the *original* CNFinBench ground-truth labels~~ RESOLVED (2026-09-16):
+  `Qwen/Qwen3.5-9B`. Found directly in the raw source data's own telemetry, not inferred -
+  `CNFinBench/data/Qwen_Harmless/judge_logits_telemetry_harmless.json` and
+  `Qwen_Harmful/judge_logits_telemetry_harmful.json` both carry an explicit `"judge_model":
+  "Qwen/Qwen3.5-9B"` field per scored round, alongside full per-token logits. Confirmed present in
+  both the harmful and harmless subsets (spot-checked, not just one file).
 - FinVault self-leakage: checked, clean (0 leaked items across all 5 comparisons).
 - CNFinBench self-leakage: real, now excluded from these numbers (23 harmful-unblocked, 49 harmless-unblocked items excluded).
