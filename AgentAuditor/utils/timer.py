@@ -7,8 +7,6 @@ import time
 from datetime import datetime
 from typing import Any, Callable, Dict, List
 
-_RUNTIME_STATE: Dict[str, Dict[str, Any]] = {}
-
 
 def _ensure_output_dir(dataset: str) -> str:
     out_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../temp", dataset)
@@ -23,6 +21,11 @@ def _run_id() -> str:
         or os.environ.get("SLURM_JOBID")
         or f"pid{os.getpid()}_{int(time.time())}"
     )
+
+
+def _state_file_path(dataset: str, run_id: str | None = None) -> str:
+    effective_run_id = run_id or _run_id()
+    return os.path.join(_ensure_output_dir(dataset), f"timings_{effective_run_id}.state.json")
 
 
 def _timing_file_path(dataset: str, run_id: str | None = None) -> str:
@@ -67,15 +70,31 @@ def _empty_run_state(dataset: str, run_id: str | None = None) -> Dict[str, Any]:
     }
 
 
-def _state_key(dataset: str, run_id: str | None = None) -> str:
-    return f"{dataset}:{run_id or _run_id()}"
+def _load_run_state(dataset: str, run_id: str | None = None) -> Dict[str, Any]:
+    effective_run_id = run_id or _run_id()
+    path = _state_file_path(dataset, effective_run_id)
+    if not os.path.exists(path):
+        return _empty_run_state(dataset, effective_run_id)
+
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            state = json.load(f)
+        if isinstance(state, dict) and "run" in state and "stage_summary" in state and "conversations" in state:
+            return state
+    except Exception:
+        pass
+
+    return _empty_run_state(dataset, effective_run_id)
 
 
-def _get_run_state(dataset: str, run_id: str | None = None) -> Dict[str, Any]:
-    key = _state_key(dataset, run_id)
-    if key not in _RUNTIME_STATE:
-        _RUNTIME_STATE[key] = _empty_run_state(dataset, run_id)
-    return _RUNTIME_STATE[key]
+def _save_run_state(state: Dict[str, Any], dataset: str, run_id: str | None = None) -> None:
+    effective_run_id = run_id or _run_id()
+    path = _state_file_path(dataset, effective_run_id)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    tmp_path = f"{path}.tmp"
+    with open(tmp_path, "w", encoding="utf-8") as f:
+        json.dump(state, f, indent=2, ensure_ascii=False)
+    os.replace(tmp_path, path)
 
 
 def _update_stage_summary(state: Dict[str, Any], stage_name: str, duration: float, start: str | None, end: str | None, success: bool, reliable: bool) -> None:
@@ -116,29 +135,33 @@ def _update_conversation_summary(state: Dict[str, Any], conversation_id: str, ro
 
 def _write_summary_to_disk(dataset: str, summary: Dict[str, Any], run_id: str | None = None) -> None:
     path = _timing_file_path(dataset, run_id=run_id)
-    try:
-        os.makedirs(os.path.dirname(path), exist_ok=True)
-        with open(path, "w", encoding="utf-8") as f:
-            json.dump(summary, f, indent=2, ensure_ascii=False)
-    except Exception:
-        pass
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    tmp_path = f"{path}.tmp"
+    with open(tmp_path, "w", encoding="utf-8") as f:
+        json.dump(summary, f, indent=2, ensure_ascii=False)
+    os.replace(tmp_path, path)
+
+
+def _delete_state_file(dataset: str, run_id: str | None = None) -> None:
+    path = _state_file_path(dataset, run_id)
+    if os.path.exists(path):
+        try:
+            os.remove(path)
+        except OSError:
+            pass
 
 
 def time_and_record(stage_name: str, func: Callable, dataset: str, *args, **kwargs) -> Any:
-    """Measure a stage without re-reading or re-writing files on each update."""
+    """Measure a stage and persist the live aggregate state to disk so separate Python invocations share one run."""
     conversation_id = kwargs.pop("conversation_id", None)
-    item_id = kwargs.pop("item_id", None)
     round_index = kwargs.pop("round_index", None)
-    metadata = kwargs.pop("metadata", None)
-    run_metadata = kwargs.pop("run_metadata", None)
-
     run_id = _run_id()
-    state = _get_run_state(dataset, run_id)
+    state = _load_run_state(dataset, run_id)
+
     start_mono = time.monotonic()
     start_iso = datetime.utcnow().isoformat() + "Z"
     slurm = _slurm_context()
     _preempt_signal_state["received"] = False
-    exc_info = None
     preempted = False
     success = False
 
@@ -150,8 +173,7 @@ def time_and_record(stage_name: str, func: Callable, dataset: str, *args, **kwar
         preempted = True
         success = False
         raise
-    except Exception as exc:
-        exc_info = str(exc)
+    except Exception:
         success = False
         raise
     finally:
@@ -171,22 +193,13 @@ def time_and_record(stage_name: str, func: Callable, dataset: str, *args, **kwar
 
         _update_stage_summary(state, stage_name, duration, start_iso, end_iso, success, len(unreliable_reasons) == 0)
         _update_conversation_summary(state, conversation_id, round_index, stage_name, duration)
+        _save_run_state(state, dataset, run_id)
 
 
 def build_nested_run_timing_structure(dataset: str, run_id: str | None = None) -> Dict[str, Any]:
-    """Return the clean per-run timing summary for the active run, derived from in-memory state."""
+    """Assemble the final clean summary from the persisted run state and write it once."""
     effective_run_id = run_id or _run_id()
-    state = _RUNTIME_STATE.get(_state_key(dataset, effective_run_id))
-
-    if state is None:
-        summary_path = _timing_file_path(dataset, effective_run_id)
-        if os.path.exists(summary_path):
-            try:
-                with open(summary_path, "r", encoding="utf-8") as f:
-                    return json.load(f) or _empty_run_state(dataset, effective_run_id)
-            except Exception:
-                pass
-        return _empty_run_state(dataset, effective_run_id)
+    state = _load_run_state(dataset, effective_run_id)
 
     stage_summary = {
         stage: {
@@ -229,11 +242,7 @@ def build_nested_run_timing_structure(dataset: str, run_id: str | None = None) -
         "conversations": conversations,
     }
 
-    try:
-        _write_summary_to_disk(dataset, summary, effective_run_id)
-    except Exception:
-        pass
-
+    _write_summary_to_disk(dataset, summary, effective_run_id)
+    # _delete_state_file(dataset, effective_run_id)
     return summary
-
 
