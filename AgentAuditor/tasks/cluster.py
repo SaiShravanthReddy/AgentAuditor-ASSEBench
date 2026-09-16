@@ -19,6 +19,8 @@ import traceback
 import os
 import pickle
 
+from .cluster_quality import compute_cluster_quality, write_cluster_quality
+
 # --- Hyperparameters ---
 NOMIC_MODEL = 'nomic-ai/nomic-embed-text-v1.5'
 MATRYOSHKA_DIM = 512
@@ -649,6 +651,15 @@ def cluster_main(dataset):
             return
 
         num_clusters_found = results['num_clusters_found']
+
+        # --- Cluster quality: silhouette score + coverage (see PIPELINE_METRICS.md's `cluster`
+        # section - previously an acknowledged gap, "no quality metric exists yet") ---
+        # Uses the same embeddings/labels already in memory from the clustering step just above -
+        # zero extra embedding-recomputation cost.
+        quality_metrics = compute_cluster_quality(final_embeddings_for_clustering, results['cluster_labels'])
+        quality_path = write_cluster_quality(output_path, quality_metrics)
+        logger.info(f"Cluster quality: coverage={quality_metrics['coverage']}, "
+                    f"silhouette_score={quality_metrics['silhouette_score']} - saved to {quality_path}")
 
         logger.info("--- Starting Representative Finding Step ---")
         # Pass the filtered_data list that corresponds row-wise to the embeddings used
