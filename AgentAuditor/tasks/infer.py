@@ -107,18 +107,19 @@ def _append_round_messages(messages: List[Dict[str, str]], round_turns: List[Dic
 def _build_prompt_messages(item: Dict, dataset: str) -> List[Dict[str, str]]:
     """Build the message sequence for one item and record a per-round timing entry."""
     messages: List[Dict[str, str]] = []
-    for round_index, round_turns in enumerate(item.get("contents", [])):
+    contents = item.get("contents", item.get("original_contents", []))
+    for round_index, round_turns in enumerate(contents):
         messages = timer.time_and_record(
-            "infer",
+            "infer_round_build",
             _append_round_messages,
             dataset,
             messages,
             round_turns,
-            conversation_id=item.get("id"),
-            item_id=item.get("id"),
-            round_index=round_index,
-            metadata=f"{item.get('id')}_{round_index}",
-            run_metadata={"dataset": dataset},
+            timing=timer.TimingMetadata(
+                conversation_id=item.get("id"),
+                round_index=round_index,
+                record_stage_summary=False,
+            ),
         )
     return messages
 
@@ -201,30 +202,20 @@ def process_json_file(input_file: str, intermediate_file: str, output_file: str,
             print(f"\n===== Processing item {i}/{len(intermediate_data)} =====")
             new_item = item.copy()
 
-            item_prompt_messages = timer.time_and_record(
-                "infer",
-                _build_prompt_messages,
-                dataset,
-                item,
-                dataset,
-                conversation_id=item.get("id"),
-                item_id=item.get("id"),
-                round_index=None,
-                metadata=f"{item.get('id')}_item",
-                run_metadata={"dataset": dataset},
-            )
+            # Record prompt construction for each round. The returned messages are not used
+            # for the API request because this pipeline sends the pre-built combined_prompt.
+            _build_prompt_messages(item, dataset)
 
             llm_output = timer.time_and_record(
-                "infer",
+                "infer_api",
                 llm_handler.call_llm_api,
                 dataset,
                 item['combined_prompt'],
                 item['id'],
-                conversation_id=item.get("id"),
-                item_id=item.get("id"),
-                round_index=None,
-                metadata=f"{item.get('id')}_api",
-                run_metadata={"dataset": dataset},
+                timing=timer.TimingMetadata(
+                    conversation_id=item.get("id"),
+                    record_stage_summary=False,
+                ),
             )
 
             # If API call failed completely, record it and continue to next item
@@ -286,10 +277,13 @@ def process_json_file(input_file: str, intermediate_file: str, output_file: str,
 
     except FileNotFoundError:
         print(f"Error: Input file not found")
+        raise
     except json.JSONDecodeError:
         print(f"Error: Invalid JSON format")
+        raise
     except Exception as e:
         print(f"Error occurred during processing: {str(e)}")
+        raise
 
 
 def infer_main(dataset):
