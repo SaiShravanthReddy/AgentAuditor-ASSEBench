@@ -111,6 +111,12 @@ if __name__ == "__main__":
         case 'eval':
             from .tasks.eval import eval_main
             timer.time_and_record('eval', eval_main, dataset, dataset)
+        case 'threshold_recalibrate':
+            # Optional, run manually after 'eval' - sweeps the self-reported confidence score for
+            # the best in-sample hard-verdict threshold, to see how much accuracy the judge's own
+            # raw 0/1 verdict is leaving on the table. See threshold_recalibration.py's docstring.
+            from .tasks.threshold_recalibration import threshold_recalibrate_main
+            timer.time_and_record('threshold_recalibrate', threshold_recalibrate_main, dataset, dataset)
         case 'direct_eval':
             # Was wrongly calling direct_metric_main (metrics-only, reads an already-existing
             # output file) with 2 args when it only accepts 1 - direct_eval_main (the actual
