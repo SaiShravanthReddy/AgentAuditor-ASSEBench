@@ -54,6 +54,7 @@ dataset_fullname = {
     # (2026-08-10): "did the attack succeed" and "was it malicious at all". Built by
     # FinVault/build_comparison_variants.py --source-name finvault-v5-fixed.
     'finvault-v5-fixed-full': 'finvault-v5-fixed-full',
+    'finvault-v5-fixed-defended-v-attack': 'finvault-v5-fixed-defended-v-attack',
     'finvault-v5-fixed-benign-v-malicious': 'finvault-v5-fixed-benign-v-malicious',
 }
 

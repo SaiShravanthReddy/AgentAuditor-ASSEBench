@@ -5,13 +5,16 @@
 # directory has to exist BEFORE you submit - SLURM opens this file the instant the job starts, not
 # when the script gets to running, so `mkdir -p logs` inside the script itself is too late.
 #SBATCH --job-name=agent-auditor
-#SBATCH --mail-type=ALL
-#SBATCH --mail-user=<email-address>
+## Uncomment both lines below after setting a real email address.
+##SBATCH --mail-type=ALL
+##SBATCH --mail-user=your-email@example.com
 #SBATCH --time=48:00:00
 #SBATCH --output=logs/%x_%j.out
 #SBATCH --error=logs/%x_%j.err
 #SBATCH --gres=gpu:1
 #SBATCH --partition=hpg-turin
+
+set -euo pipefail
 
 # sbatch runs this script in a fresh non-interactive shell that does NOT source ~/.bashrc, so
 # `python` isn't on PATH unless loaded here explicitly - see https://docs.rc.ufl.edu/quickstart/computation/
@@ -31,6 +34,10 @@ python -m AgentAuditor rjudge demo
 python -m AgentAuditor rjudge infer_emb
 python -m AgentAuditor rjudge infer
 python -m AgentAuditor rjudge eval
+
+# Emit the final run timing summary after the pipeline finishes. This writes the clean JSON summary
+# under AgentAuditor/temp/<dataset>/timings_<run_id>.json and also prints it to stdout.
+python -m AgentAuditor cnfinbench-pooled timing_summary
 
 # Notes: Only one model and one dataset can be used at a time. If you want to parallelize the process,
 # just make a copy of the repo.
