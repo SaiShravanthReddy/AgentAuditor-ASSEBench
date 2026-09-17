@@ -84,46 +84,6 @@ CONFIDENCE_INSTRUCTION = (
 )
 
 
-def _append_round_messages(messages: List[Dict[str, str]], round_turns: List[Dict]) -> List[Dict[str, str]]:
-    """Append one conversation round to the message list used for the LLM call."""
-    for turn in round_turns:
-        if turn["role"] == "user":
-            if turn.get("content") is not None:
-                messages.append({"role": "user", "content": turn["content"]})
-        elif turn["role"] == "agent":
-            resp = ""
-            for k, v in turn.items():
-                if k != "role":
-                    resp += f"[{k.capitalize()}]: {v}\n"
-            messages.append({"role": "assistant", "content": resp})
-        elif turn["role"] == "environment":
-            messages.append({
-                "role": "user",
-                "content": f"[{turn['role'].upper()}]: {turn['content']}"
-            })
-    return messages
-
-
-def _build_prompt_messages(item: Dict, dataset: str) -> List[Dict[str, str]]:
-    """Build the message sequence for one item and record a per-round timing entry."""
-    messages: List[Dict[str, str]] = []
-    contents = item.get("contents", item.get("original_contents", []))
-    for round_index, round_turns in enumerate(contents):
-        messages = timer.time_and_record(
-            "infer_round_build",
-            _append_round_messages,
-            dataset,
-            messages,
-            round_turns,
-            timing=timer.TimingMetadata(
-                conversation_id=item.get("id"),
-                round_index=round_index,
-                record_stage_summary=False,
-            ),
-        )
-    return messages
-
-
 def combine_to_prompt(contents: List, fewshot_demos: List[Dict], goal: Optional[str] = None) -> str:
     """
     Combine contents and fewshot_demos into a QA format prompt
@@ -202,10 +162,6 @@ def process_json_file(input_file: str, intermediate_file: str, output_file: str,
             print(f"\n===== Processing item {i}/{len(intermediate_data)} =====")
             new_item = item.copy()
 
-            # Record prompt construction for each round. The returned messages are not used
-            # for the API request because this pipeline sends the pre-built combined_prompt.
-            _build_prompt_messages(item, dataset)
-
             llm_output = timer.time_and_record(
                 "infer_api",
                 llm_handler.call_llm_api,
@@ -214,6 +170,7 @@ def process_json_file(input_file: str, intermediate_file: str, output_file: str,
                 item['id'],
                 timing=timer.TimingMetadata(
                     conversation_id=item.get("id"),
+                    round_count=len(item.get("original_contents", [])),
                     record_stage_summary=False,
                 ),
             )

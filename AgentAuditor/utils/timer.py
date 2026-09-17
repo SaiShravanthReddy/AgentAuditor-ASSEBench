@@ -34,16 +34,10 @@ class StageDetails(TypedDict):
     end: str | None
 
 
-class RoundDetails(TypedDict):
-    round_index: int
-    stages: dict[str, float]
-    total_seconds: float
-
-
 class ConversationDetails(TypedDict):
     conversation_id: str
+    round_count: int
     stages: dict[str, float]
-    rounds: dict[str, RoundDetails]
     total_seconds: float
 
 
@@ -58,7 +52,7 @@ class TimingMetadata:
     """Metadata consumed by the timer rather than forwarded to the wrapped function."""
 
     conversation_id: object | None = None
-    round_index: int | None = None
+    round_count: int | None = None
     record_stage_summary: bool = True
 
 
@@ -224,7 +218,7 @@ def _update_stage_summary(
 def _update_conversation_summary(
     state: RunState,
     conversation_id: object | None,
-    round_index: int | None,
+    round_count: int | None,
     stage_name: str,
     duration: float,
 ) -> None:
@@ -236,24 +230,18 @@ def _update_conversation_summary(
         conversation_key,
         {
             "conversation_id": conversation_key,
+            "round_count": round_count or 0,
             "stages": {},
-            "rounds": {},
             "total_seconds": 0.0,
         },
     )
+    if round_count is not None:
+        conversation["round_count"] = round_count
+    elif "round_count" not in conversation:
+        legacy_rounds = cast(dict[str, Any], conversation).get("rounds", {})
+        conversation["round_count"] = len(legacy_rounds)
     conversation["stages"][stage_name] = conversation["stages"].get(stage_name, 0.0) + duration
     conversation["total_seconds"] += duration
-
-    if round_index is None:
-        return
-
-    round_key = str(round_index)
-    round_details = conversation["rounds"].setdefault(
-        round_key,
-        {"round_index": round_index, "stages": {}, "total_seconds": 0.0},
-    )
-    round_details["stages"][stage_name] = round_details["stages"].get(stage_name, 0.0) + duration
-    round_details["total_seconds"] += duration
 
 
 def time_and_record(
@@ -311,7 +299,7 @@ def time_and_record(
             _update_conversation_summary(
                 state,
                 metadata.conversation_id,
-                metadata.round_index,
+                metadata.round_count,
                 stage_name,
                 duration,
             )
@@ -337,23 +325,14 @@ def _build_summary(state: RunState, dataset: str, run_id: str) -> dict[str, Any]
 
     conversations = []
     for conversation_id, conversation in sorted(state["conversations"].items()):
-        rounds = [
-            {
-                "round_index": round_details["round_index"],
-                "total_seconds": round(float(round_details["total_seconds"]), 2),
-                "stages": _rounded_stages(round_details["stages"]),
-            }
-            for _, round_details in sorted(
-                conversation["rounds"].items(),
-                key=lambda item: int(item[0]),
-            )
-        ]
+        legacy_rounds = cast(dict[str, Any], conversation).get("rounds", {})
+        round_count = conversation.get("round_count", len(legacy_rounds))
         conversations.append(
             {
                 "conversation_id": conversation_id,
+                "round_count": round_count,
                 "total_seconds": round(float(conversation["total_seconds"]), 2),
                 "stages": _rounded_stages(conversation["stages"]),
-                "rounds": rounds,
             }
         )
 
