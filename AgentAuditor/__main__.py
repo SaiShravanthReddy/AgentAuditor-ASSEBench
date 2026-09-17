@@ -59,6 +59,8 @@ dataset_fullname = {
 }
 
 if __name__ == "__main__":
+    timer.install_signal_handlers()
+
     # Execute the main script
     if len(sys.argv) >= 3:
         dataset = sys.argv[1]  # First argument
