@@ -1,5 +1,5 @@
 #!/bin/bash
-# Before running the script, configure LLM API keys and endpoints in .py files under AgentAuditor/tasks, along with model names
+# Before running the script, configure API credentials and model names in the repo-root .env.
 # To run an experiement, take rjudge as an example:
 # --output must be declared before any non-#SBATCH executable line in the script. The `logs/`
 # directory has to exist BEFORE you submit - SLURM opens this file the instant the job starts, not
@@ -37,7 +37,7 @@ python -m AgentAuditor rjudge eval
 
 # Emit the final run timing summary after the pipeline finishes. This writes the clean JSON summary
 # under AgentAuditor/temp/<dataset>/timings_<run_id>.json and also prints it to stdout.
-python -m AgentAuditor cnfinbench-pooled timing_summary
+python -m AgentAuditor rjudge timing_summary
 
 # Notes: Only one model and one dataset can be used at a time. If you want to parallelize the process,
 # just make a copy of the repo.
