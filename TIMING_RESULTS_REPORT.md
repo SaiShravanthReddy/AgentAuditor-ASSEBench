@@ -3,7 +3,7 @@
 **Report date:** 2026-09-23  
 **Runs analyzed:** 5 completed Slurm jobs covering 2,166 conversations  
 
-This report contains wall-clock pipeline timings and conversation-level inference latency only. Job 43051574 is used for `cnfinbench-harmful-unblocked`; the earlier zero-conversation attempt is excluded.
+This report contains wall-clock pipeline timings and conversation-level inference latency only. 
 
 ## Run-level results
 
@@ -26,14 +26,6 @@ Wall time is the difference between `run.started_at` and `run.ended_at`. Recorde
 | `cnfinbench-harmful-unblocked` | 8 m 12.4 s | 2 m 1.7 s | 2 m 4.9 s | 1 m 21.1 s | 2 m 0.4 s | 11 m 18.9 s | 0.26 s | 0.07 s | 1.67 s |
 | `cnfinbench-harmless-unblocked` | 24 m 32.9 s | 3 m 17.6 s | 5 m 56.9 s | 9 m 44.0 s | 3 m 54.5 s | 34 m 52.7 s | 0.51 s | 0.15 s | 1.81 s |
 | `finvault-v5-fixed-benign-v-malicious` | 1 h 42 m 59.4 s | 2 m 30.0 s | 7 m 33.3 s | 10 m 7.4 s | 3.95 s | 1 h 8 m 12.5 s | 0.21 s | 0.08 s | 30.86 s |
-
-### Stage distribution observations
-
-- The two full 321-record CNFinBench runs are closely matched. Harmful took 3 m 39.5 s longer overall, primarily because preprocessing was 3 m 4.7 s slower.
-- The completed harmful-unblocked rerun was the fastest end-to-end job and had the highest inference throughput. Its 180 conversations completed inference at 15.91 conversations/minute.
-- The 301-record harmless-unblocked run was substantially slower than both 321-record runs. Its preprocessing was 24 m 32.9 s, demo repair was 9 m 44.0 s, and inference was 34 m 52.7 s. This indicates higher model/API latency or more expensive outputs, not simply a larger input count.
-- FinVault retrieval took only 3.95 s, compared with roughly two to four minutes for the complete CNFinBench runs. This is consistent with a warm embedding cache or materially different cached retrieval workload and should not be interpreted as an uncached benchmark comparison without checking cache state.
-- The JSON repair stages after inference were negligible in every complete run. This likely means few or no outputs required the LLM-based second repair pass.
 
 ## Conversation-level inference latency
 
