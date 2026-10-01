@@ -743,10 +743,25 @@ class EmbeddingProcessor:
 
             logger.info(f"Finished processing {processed_count} query items. Total skipped: {skipped_items}.")
 
-            # --- Retrieval-quality metrics: label agreement + content-similarity distribution ---
+            # --- Retrieval-quality metrics: label agreement + content-similarity distribution +
+            # self-leakage rate ---
             label_agreement_metrics = compute_label_agreement(label_agreement_pairs)
             similarity_metrics = compute_similarity_stats(similarity_scores)
-            combined_metrics = {**label_agreement_metrics, 'similarity_scores': similarity_metrics}
+            # Local import: CNFinBench/ isn't part of the AgentAuditor package, and this keeps the
+            # cross-directory dependency scoped to right where it's used. Dataset-agnostic despite
+            # the cnfinbench_ name prefix - operates on any k3-shaped list (see CLAUDE.md).
+            from CNFinBench.cnfinbench_detect_leakage import genuinely_leaked_ids_from_data
+            leaked_ids = sorted(genuinely_leaked_ids_from_data(output_data))
+            leakage_metrics = {
+                'leaked_count': len(leaked_ids),
+                'leaked_ids': leaked_ids,
+                'leakage_rate': len(leaked_ids) / len(output_data) if output_data else None,
+            }
+            combined_metrics = {
+                **label_agreement_metrics,
+                'similarity_scores': similarity_metrics,
+                'self_leakage': leakage_metrics,
+            }
             quality_path = write_retrieval_quality(output_path, combined_metrics)
             if label_agreement_metrics['agreement_rate'] is not None:
                 logger.info(
@@ -765,6 +780,14 @@ class EmbeddingProcessor:
                 )
             else:
                 logger.warning(f"No similarity scores collected - saved available metrics to {quality_path}")
+            if leakage_metrics['leaked_count'] > 0:
+                logger.warning(
+                    f"Self-leakage: {leakage_metrics['leaked_count']}/{len(output_data)} items "
+                    f"({leakage_metrics['leakage_rate']:.4f}) retrieved their own dialogue as a "
+                    f"few-shot demo - see {quality_path}'s self_leakage.leaked_ids"
+                )
+            else:
+                logger.info("Self-leakage: 0 items affected.")
 
             # --- Sanity check: refuse to silently write a degenerate (near-)zero-shot dataset ---
             # This is the exact failure mode that let a stale cross-dataset embedding cache collision
