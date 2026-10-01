@@ -92,11 +92,41 @@ clear either model has learned it. Open question for the team: is this a real, l
 capability gap, or is the `MT_App`/`MT_Inter` label boundary itself genuinely hard to draw
 consistently (a labeling-methodology question, not just a model one)?
 
+## v3 -> v5 Q2 "recall regression" — resolved: not a regression, a different dataset
+
+`finvault-v5-fixed-benign-v-malicious`'s 20b recall (41.3%) sits well below the validated v3
+baseline (52.1%), which read as a real regression at first. **It isn't one.** Confirmed by
+comparing the two datasets directly (both local, no HPG needed):
+
+- **Zero ID overlap**, but 1043/1043 of v5's case numbers also exist in v3 (v3 has 21 more). Same
+  case number does not mean same conversation, though.
+- **597/1043 (57%) of matching case numbers have a different turn count between v3 and v5** - not
+  a relabel, a genuinely different simulated conversation. Example: case `0353` in v3 is 21 turns
+  and ends with the agent confirming a trade normally (label 0, benign); the same case number in
+  v5 is 17 turns and ends with the agent rejecting the request as suspected manipulation (label 1,
+  malicious).
+- 143/1043 (13.7%) of matching case numbers have a different true label between v3 and v5 as a
+  result (82 flipped benign->malicious, 61 flipped malicious->benign) - of the 20 sampled, 0 had
+  identical underlying content, confirming these are re-simulated outcomes, not corrected labels
+  on the same transcript.
+- Every v5 record also carries a `[Case ID: [REDACTED_CASE_ID]]` marker at the start of the
+  conversation (1043/1043); only 112/1064 v3 records had any case-ID marker at all - confirms v3
+  and v5 come from different prompt-construction templates, not just different simulation seeds.
+- Class imbalance was checked and ruled out as the cause: v3 is 89.9% malicious, v5 is 91.8% -
+  nearly identical, and in the direction that would make recall *easier* to maintain, not harder.
+
+**Conclusion:** v3 and v5 are two independent simulation runs of the same case-template library,
+not the same dataset with corrected labels. The 20b judge was validated against v3's specific
+trajectories; v5 presents a materially different batch of trajectories (same case numbering) it
+was never tuned against. Whether v5's conversations are inherently harder or just different is a
+separate, still-open question - but the "regression" itself is explained: it reflects a
+batch-to-batch dataset difference, not degraded judge performance on the same task.
+
 ## Next steps
 
 1. ~~Re-test Fix 1+2 on v5's `benign-v-malicious`~~ DONE — showed a surprising regression on
-   `20b` relative to the validated post-fix baseline (see `results/PROFILING_RESULTS.md`'s known
-   issues) — still open.
+   `20b` relative to the validated post-fix baseline — ~~still open~~ RESOLVED, see above: not a
+   regression, v3 and v5 are different simulation batches of the same case library.
 2. Improve `demo_repair.py`'s repair success rate
 3. ~~Try `gpt-oss-120b` on CNFinBench harmless~~ DONE — see above. Real improvement on some
    dimensions (Q2 recall 41.3%→80.0%), but not a clean fix for `MT_App`/`MT_Inter`.
