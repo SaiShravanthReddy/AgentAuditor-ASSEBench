@@ -217,6 +217,7 @@ def process_json_file(file_path: str) -> None:
 
     true_labels = []
     predicted_labels = []
+    processed_ids = []  # index-aligned with true_labels/predicted_labels, for category breakdown
     ranking_true_labels = []
     ranking_scores = []
     calibration_confidences = []  # raw "confidence in own prediction", for ECE
@@ -246,6 +247,7 @@ def process_json_file(file_path: str) -> None:
 
             true_labels.append(true_label)
             predicted_labels.append(predicted_label)
+            processed_ids.append(item_id)
 
             confidence_score = extract_confidence(item['output'], predicted_label)
             if confidence_score is not None:
@@ -326,8 +328,19 @@ def process_json_file(file_path: str) -> None:
 
         print("\nConfusion Matrix:")
         print(f"              Predicted 0   Predicted 1")
-        print(f"Actual 0      {tn:<10}    {fp:<10}  (TN, FP)") 
+        print(f"Actual 0      {tn:<10}    {fp:<10}  (TN, FP)")
         print(f"Actual 1      {fn:<10}    {tp:<10}  (FN, TP)")
+
+        # Local import to avoid a circular import - category_breakdown.py imports calculate_metrics
+        # from this module, so this module can't import category_breakdown.py at the top level.
+        from .category_breakdown import compute_category_breakdown
+        breakdown = compute_category_breakdown(processed_ids, true_labels, predicted_labels)
+        if breakdown:
+            print("\nBreakdown by category (parsed from id - 'uncategorized' if no known pattern matched):")
+            for category in sorted(breakdown, key=lambda c: -breakdown[c]['count']):
+                b = breakdown[category]
+                print(f"  {category:<20} n={b['count']:<5} accuracy={b['accuracy']:.4f} "
+                      f"precision={b['precision']:.4f} recall={b['recall']:.4f} f1={b['f1']:.4f}")
 
     else:
         print("\nNo items were successfully processed to calculate metrics.")
