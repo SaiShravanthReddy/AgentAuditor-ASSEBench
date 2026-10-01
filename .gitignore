@@ -14,6 +14,7 @@ CNFinBench/data/
 FinVault/data/
 embedding_cache_structured/
 HIPERGATOR.md
+NAVIGATOR.md
 CLAUDE.md
 # FinVault converted/derived datasets - large, regenerated locally via
 # FinVault/finvault_to_agentauditor.py and FinVault/build_comparison_variants.py, copied to
