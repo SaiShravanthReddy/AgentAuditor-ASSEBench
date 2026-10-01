@@ -109,12 +109,19 @@ on `120b` (3.6s to 119.8s across otherwise-similar datasets) is worth a closer l
 
 ## Known issues / next steps
 
-1. **Run `infer_retry` on the 5 incomplete CNFinBench `20b` datasets** to finalize the comparison.
-2. **Fix `infer_llm_repair.py`'s hardcoded `ERROR_IDS_TO_FIX`** — likely improves every dataset's
-   completeness, not just this batch's.
-3. **Investigate why `finvault-v5-fixed-benign-v-malicious` (Q2) `20b` recall (41.3%) sits below the
-   validated post-fix baseline (52.1%)** while `120b` on the same dataset (80.0%) far exceeds it —
-   still open whether this is model-capability-driven or something dataset-specific to this v5 run.
-4. **`harmless-unblocked`'s `120b` regression relative to trivial baseline** — check whether this
-   is a one-off or a real precision/recall tradeoff pattern worth understanding before treating
-   `120b` as a strict upgrade.
+1. **Run `infer_retry` on the 5 incomplete CNFinBench `20b` datasets** to finalize the comparison —
+   note: a separate bug was found and fixed (2026-10) where `infer_retry`'s own repair chain was
+   wrongly flagging already-valid records as malformed and destroying their data (see
+   `infer_llm_repair.py`'s git history) — rerun with the fix applied, not the old behavior.
+2. ~~Fix `infer_llm_repair.py`'s hardcoded `ERROR_IDS_TO_FIX`~~ RESOLVED — replaced with
+   `find_malformed_ids()`. (A second, separate bug in the same file's validity check was found and
+   fixed later — see item 1.)
+3. ~~Investigate why `finvault-v5-fixed-benign-v-malicious` (Q2) `20b` recall (41.3%) sits below the
+   validated post-fix baseline (52.1%)~~ RESOLVED — not a regression. v3 and v5 are different
+   simulation runs of the same case-template library (57% of matching case numbers have a
+   different turn count / different outcome, not the same transcript relabeled) — see
+   `AGENTAUDITOR_DIAGNOSIS.md` for the full comparison.
+4. ~~`harmless-unblocked`'s `120b` regression relative to trivial baseline~~ RESOLVED — real
+   precision/recall tradeoff, not a one-off: `120b` over-applies the "cumulative disclosure
+   escalation" pattern to `MT_Inter` conversations that are structurally similar to genuine
+   `MT_App` risk but labeled benign (FPs 3→51) — see `AGENTAUDITOR_DIAGNOSIS.md`.
