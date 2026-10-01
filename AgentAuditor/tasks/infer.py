@@ -76,8 +76,20 @@ class LLMHandler:
                     'usage': extract_usage(result),
                     'success': True,
                 })
+                message = result["choices"][0]["message"]
+                content = message.get("content")
+                if not content:
+                    # Some responses from this gateway (confirmed on gpt-oss-20b, for longer/more
+                    # complex prompts specifically) put the model's actual answer in
+                    # reasoning_content instead of content, leaving content literally null despite
+                    # a real, complete JSON verdict being present. Root-caused by dumping a raw API
+                    # response for a real item that was wrongly treated as "failed" - HTTP 200,
+                    # finish_reason "stop", content: null, reasoning_content: the full real verdict
+                    # JSON. Without this fallback, a perfectly good answer is silently discarded and
+                    # the item gets retried/marked failed for no real reason.
+                    content = message.get("reasoning_content")
                 print(f"ID {item_id} processed successfully!")
-                return result["choices"][0]["message"]["content"]
+                return content
 
             except Exception as e:
                 self.call_records.append({

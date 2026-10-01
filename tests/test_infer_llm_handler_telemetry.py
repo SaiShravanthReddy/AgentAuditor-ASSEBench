@@ -14,11 +14,14 @@ def _config():
     return config
 
 
-def _mock_response(status_ok=True, content="judge output", usage=None):
+def _mock_response(status_ok=True, content="judge output", usage=None, reasoning_content=None):
     mock = MagicMock()
     if status_ok:
         mock.raise_for_status.return_value = None
-        body = {"choices": [{"message": {"content": content}}]}
+        message = {"content": content}
+        if reasoning_content is not None:
+            message["reasoning_content"] = reasoning_content
+        body = {"choices": [{"message": message}]}
         if usage is not None:
             body["usage"] = usage
         mock.json.return_value = body
@@ -69,3 +72,56 @@ class TestCallLlmApiTelemetry:
             handler.call_llm_api("prompt 2", item_id="item-2")
 
         assert len(handler.call_records) == 2
+
+
+class TestReasoningContentFallback:
+    """Regression guard for a real incident (2026-10): some responses from this gateway (confirmed
+    on gpt-oss-20b, for longer/more complex prompts) put the model's actual answer in
+    reasoning_content instead of content, leaving content literally null despite a complete, valid
+    JSON verdict being present. The old code only ever read content, so a perfectly good answer
+    was silently discarded and the item got endlessly marked "failed" and retried for no real
+    reason - confirmed by dumping a raw API response for a real production item
+    (harmless-MT_App-28) that was wrongly stuck in failed.json: HTTP 200, finish_reason "stop",
+    content: null, reasoning_content: the full real verdict JSON.
+    """
+
+    def test_null_content_falls_back_to_reasoning_content(self):
+        handler = LLMHandler(_config())
+        real_verdict = '{\n  "label": 0,\n  "confidence": 0.99,\n  "explanation": "..."\n}'
+        mock = _mock_response(content=None, reasoning_content=real_verdict)
+        with patch("AgentAuditor.tasks.infer.requests.post", return_value=mock):
+            result = handler.call_llm_api("some long prompt", item_id="harmless-MT_App-28")
+
+        assert result == real_verdict
+        assert handler.call_records[0]['success'] is True
+
+    def test_empty_string_content_also_falls_back(self):
+        """Not just None - an empty string content is equally useless and should also trigger the
+        fallback, since both represent "no real answer in the expected field"."""
+        handler = LLMHandler(_config())
+        mock = _mock_response(content="", reasoning_content='{"label": 1}')
+        with patch("AgentAuditor.tasks.infer.requests.post", return_value=mock):
+            result = handler.call_llm_api("some prompt", item_id="item-1")
+
+        assert result == '{"label": 1}'
+
+    def test_populated_content_is_used_directly_not_overridden(self):
+        """The normal, common case must be unaffected: when content is genuinely populated, use it
+        as-is, even if reasoning_content is also present (don't prefer reasoning_content blindly)."""
+        handler = LLMHandler(_config())
+        mock = _mock_response(content="real content here", reasoning_content="should not be used")
+        with patch("AgentAuditor.tasks.infer.requests.post", return_value=mock):
+            result = handler.call_llm_api("some prompt", item_id="item-1")
+
+        assert result == "real content here"
+
+    def test_both_content_and_reasoning_content_missing_returns_none(self):
+        """If there's genuinely no answer anywhere in the response, the function must still return
+        None (and the caller's existing "treat None as failure" logic still applies) rather than
+        raising or returning something misleading."""
+        handler = LLMHandler(_config())
+        mock = _mock_response(content=None, reasoning_content=None)
+        with patch("AgentAuditor.tasks.infer.requests.post", return_value=mock):
+            result = handler.call_llm_api("some prompt", item_id="item-1")
+
+        assert result is None
