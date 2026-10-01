@@ -14,6 +14,8 @@ from typing import Dict, List, Optional
 from tqdm import tqdm
 import os
 
+from .api_telemetry import extract_usage
+
 class GPTConfig:
     def __init__(self):
         self.API_KEY = os.environ.get("AGENTAUDITOR_API_KEY", "sk-xxxx")
@@ -27,6 +29,10 @@ class GPTConfig:
 class LLMHandler:
     def __init__(self, config: GPTConfig):
         self.config = config
+        # One entry per API call ATTEMPT (including failed/retried ones) - see api_telemetry.py's
+        # summarize_calls(). Accumulates across every call this handler instance makes, since
+        # process_json_file() creates one LLMHandler and reuses it for the whole dataset.
+        self.call_records: List[Dict] = []
 
     def call_llm_api(self, prompt: str, item_id: int) -> Optional[str]:
         """
@@ -52,6 +58,7 @@ class LLMHandler:
         }
 
         for attempt in range(self.config.MAX_RETRIES):
+            call_start = time.time()
             try:
                 print(f"\nProcessing ID {item_id} - Attempt {attempt + 1} calling API...")
 
@@ -64,10 +71,20 @@ class LLMHandler:
                 response.raise_for_status()
 
                 result = response.json()
+                self.call_records.append({
+                    'elapsed_seconds': time.time() - call_start,
+                    'usage': extract_usage(result),
+                    'success': True,
+                })
                 print(f"ID {item_id} processed successfully!")
                 return result["choices"][0]["message"]["content"]
 
             except Exception as e:
+                self.call_records.append({
+                    'elapsed_seconds': time.time() - call_start,
+                    'usage': None,
+                    'success': False,
+                })
                 print(f"ID {item_id} - Attempt {attempt + 1} failed: {str(e)}")
                 if attempt < self.config.MAX_RETRIES - 1:
                     print(f"Waiting {self.config.RETRY_DELAY} seconds before retry...")
@@ -230,6 +247,23 @@ def process_json_file(input_file: str, intermediate_file: str, output_file: str,
             print(f"\nERROR: Every item failed its API call - {output_file} was never created. "
                   f"Check {failed_items_file} for why (an invalid/expired API key or wrong "
                   f"endpoint is the most common cause - verify credentials before rerunning).")
+
+        # --- API telemetry: token usage + latency (including P95/P99, not just mean) across
+        # every call attempt this run made, successful or not. See api_telemetry.py's docstring.
+        from .api_telemetry import summarize_calls, write_api_telemetry
+        telemetry = summarize_calls(llm_handler.call_records)
+        telemetry_path = write_api_telemetry(os.path.dirname(output_file), 'infer', telemetry)
+        if telemetry['latency'] is not None:
+            print(f"\nAPI telemetry: {telemetry['total_calls']} call attempts "
+                  f"({telemetry['successful_calls']} successful, {telemetry['failed_calls']} failed). "
+                  f"Latency: mean={telemetry['latency']['mean']:.2f}s p95={telemetry['latency']['p95']:.2f}s "
+                  f"p99={telemetry['latency']['p99']:.2f}s. ", end="")
+            if telemetry['tokens'] is not None:
+                print(f"Tokens: {telemetry['tokens']['total_tokens']} total over "
+                      f"{telemetry['tokens']['calls_with_usage']} calls with usage reported.")
+            else:
+                print("No token usage reported by the API.")
+            print(f"Saved to {telemetry_path}")
 
         # Clean up intermediate file
         try:
