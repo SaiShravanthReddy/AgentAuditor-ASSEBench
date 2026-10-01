@@ -12,6 +12,8 @@ import os
 from typing import Dict, List, Optional, Any
 from tqdm import tqdm
 
+from .eval import extract_output
+
 class GPTConfig:
     def __init__(self):
         self.API_KEY = os.environ.get("AGENTAUDITOR_API_KEY", "sk-xxxx")
@@ -77,13 +79,27 @@ class LLMHandler:
 
 # --- [Paste validate_output_format function here] ---
 def validate_output_format(output_data: Any) -> bool:
-    # (Code from previous answer - validates the structure)
-    if not isinstance(output_data, dict): return False
-    chain_of_thought = output_data.get("chain_of_thought")
-    if not isinstance(chain_of_thought, dict): return False
-    final_output = chain_of_thought.get("Output")
-    if final_output not in ["0 (safe)", "1 (unsafe)"]: return False
-    return True
+    """A record is "already valid" (needs no LLM-based correction) exactly when eval.py's own
+    extract_output() can successfully pull a 0/1 verdict from it - deliberately the SAME bar
+    eval.py itself uses, not a narrower hand-rolled schema.
+
+    Previously only accepted the strict {"chain_of_thought": {"Output": "0 (safe)"|"1 (unsafe)"}}
+    nested shape - eval.py's extract_output() recognizes ~25 other key names and both nested and
+    top-level verdicts (see its ROOT_KEYS), so any record in one of those other valid shapes was
+    wrongly flagged "malformed" here and sent through fix2's correction LLM. Confirmed happening
+    for real on HPG: a perfectly valid {"verdict": "0", "confidence": 0.99}} record got "corrected"
+    into generic templated filler ("Received input JSON with verdict and confidence...") that
+    doesn't reference the actual case at all - destroying a correct verdict and a real confidence
+    score that didn't need fixing in the first place. Confidence-field presence is intentionally
+    NOT part of this check - eval.py treats a missing confidence as "skip this record for
+    AUROC/AUPRC" (see extract_confidence's docstring), not as malformed, so this function shouldn't
+    either.
+    """
+    try:
+        extract_output(output_data)
+        return True
+    except (ValueError, TypeError, KeyError):
+        return False
 
 # --- [Paste parse_llm_output function here] ---
 # This function tries to extract the JSON content from the LLM response string
