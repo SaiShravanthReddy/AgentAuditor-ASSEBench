@@ -31,12 +31,14 @@ PREFIX_LEN = 150
 MIN_TURN_LEN = 40
 
 
-def genuinely_leaked_ids(k3_path):
-    with open(k3_path, "r", encoding="utf-8") as f:
-        k3 = json.load(f)
-
+def genuinely_leaked_ids_from_data(k3_data):
+    """Core detection logic, operating on an already-loaded k3.json list rather than a file path -
+    lets infer_emb.py call this directly on output_data in memory (it already has this exact list
+    built, right before writing k3.json) instead of writing the file and re-reading it just to
+    check for leakage. The CLI entry point below (genuinely_leaked_ids) is a thin file-reading
+    wrapper around this for the standalone script use case."""
     leaked = set()
-    for item in k3:
+    for item in k3_data:
         item_id = item.get("id")
         turns = item["contents"][0] if item.get("contents") else []
         if not turns:
@@ -51,6 +53,12 @@ def genuinely_leaked_ids(k3_path):
                 leaked.add(item_id)
                 break
     return leaked
+
+
+def genuinely_leaked_ids(k3_path):
+    with open(k3_path, "r", encoding="utf-8") as f:
+        k3 = json.load(f)
+    return genuinely_leaked_ids_from_data(k3)
 
 
 def main():
