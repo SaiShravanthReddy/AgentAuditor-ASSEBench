@@ -9,6 +9,7 @@ from AgentAuditor.tasks.eval import (
     normalize_output,
     extract_output,
     extract_confidence,
+    extract_raw_confidence,
     calculate_metrics,
     calculate_ranking_metrics,
     ROOT_KEYS,
@@ -110,6 +111,33 @@ class TestExtractConfidence:
 
     def test_out_of_range_confidence_ignored(self):
         assert extract_confidence({"confidence": 1.5}, predicted_label=1) is None
+
+
+class TestExtractRawConfidence:
+    """extract_raw_confidence() is extract_confidence() without the positive-class flip - needed
+    for ECE, which asks "how confident was the model in its own prediction", not "what's the
+    positive-class score"."""
+    def test_returns_value_unflipped_regardless_of_predicted_label(self):
+        # Unlike extract_confidence, the predicted label must NOT affect this value at all.
+        assert extract_raw_confidence({"confidence": 0.9}) == 0.9
+
+    def test_nested_under_chain_of_thought(self):
+        assert extract_raw_confidence({"chain_of_thought": {"confidence": 0.8}}) == 0.8
+
+    def test_missing_confidence_returns_none(self):
+        assert extract_raw_confidence({"verdict": 1}) is None
+
+    def test_non_dict_returns_none(self):
+        assert extract_raw_confidence("not a dict") is None
+
+    def test_out_of_range_confidence_ignored(self):
+        assert extract_raw_confidence({"confidence": 1.5}) is None
+
+    def test_consistent_with_extract_confidence_for_positive_predictions(self):
+        """extract_confidence(data, predicted_label=1) must always equal extract_raw_confidence(data)
+        exactly - this is the refactor's own invariant, not just a coincidence."""
+        data = {"confidence": 0.73}
+        assert extract_confidence(data, predicted_label=1) == extract_raw_confidence(data)
 
 
 class TestCalculateMetrics:
