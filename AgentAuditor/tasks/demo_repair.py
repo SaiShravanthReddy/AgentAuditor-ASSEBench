@@ -333,6 +333,18 @@ def format_chain_of_thoughts_in_file(input_json_path: str, output_json_path: str
     except Exception as e:
         print(f"保存输出文件 {output_json_path} 时出错: {e}")
 
+    # --- Demo self-consistency: does each demo's own stated verdict match the label it was told
+    # to justify? (see demo_quality.py's docstring - previously an acknowledged gap, "never whether
+    # the reasoning inside actually reaches the correct conclusion for that record's known label")
+    # Local import to avoid a circular import - demo_quality.py imports is_correctly_nested_cot
+    # from this module, so this module can't import demo_quality.py at the top level.
+    from .demo_quality import compute_demo_consistency, write_demo_consistency
+    consistency_metrics = compute_demo_consistency(processed_data)
+    quality_path = write_demo_consistency(output_json_path, consistency_metrics)
+    print(f"Demo self-consistency: {consistency_metrics['num_consistent']}/"
+          f"{consistency_metrics['num_validated']} validated demos agree with their own label "
+          f"(rate={consistency_metrics['consistency_rate']}) - saved to {quality_path}")
+
     if failed_items_log:
         print(f"\n{len(failed_items_log)} 个项目在 CoT 处理过程中遇到问题或LLM未能成功修正。")
         try:
