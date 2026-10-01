@@ -26,7 +26,7 @@ from sentence_transformers import SentenceTransformer
 import os
 
 from .demo_repair import is_correctly_nested_cot
-from .retrieval_quality import compute_label_agreement, write_retrieval_quality
+from .retrieval_quality import compute_label_agreement, compute_similarity_stats, write_retrieval_quality
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(name)s - %(message)s')
@@ -664,6 +664,9 @@ class EmbeddingProcessor:
             # was previously a flagged gap, not measured anywhere). Costs nothing extra since both
             # labels are already loaded in memory for this loop's own purpose.
             label_agreement_pairs = []
+            # Raw content-similarity score for every demo slot filled - find_most_similar_two_stage()
+            # already computes this as its ranking criterion, previously discarded right after use.
+            similarity_scores = []
             for item2 in data2:
                 if not isinstance(item2, dict): # Basic check on query item structure
                      logger.warning(f"Skipping invalid query item (not a dict): {item2}")
@@ -703,7 +706,6 @@ class EmbeddingProcessor:
                 # --- Generate Demos from Found Similar Items ---
                 fewshot_demos = []
                 query_label = item2.get('label')
-                # The score is not used here, only the ID to fetch raw data
                 for similar_id, score in similar_items_info:
                     if similar_id in data1:
                         similar_item_data = data1[similar_id]
@@ -720,6 +722,8 @@ class EmbeddingProcessor:
                         demo_label = similar_item_data.get('label')
                         if query_label in (0, 1) and demo_label in (0, 1):
                             label_agreement_pairs.append((query_label, demo_label))
+                        if isinstance(score, (int, float)):
+                            similarity_scores.append(float(score))
                     else:
                         # This might happen if cache is stale relative to raw data file
                         logger.warning(f"Similar item ID {similar_id} (score: {score:.4f}) found by search, but not present in loaded raw reference data {file_path1}.")
@@ -739,17 +743,28 @@ class EmbeddingProcessor:
 
             logger.info(f"Finished processing {processed_count} query items. Total skipped: {skipped_items}.")
 
-            # --- Retrieval-quality metric: % of retrieved demos sharing the query's true label ---
+            # --- Retrieval-quality metrics: label agreement + content-similarity distribution ---
             label_agreement_metrics = compute_label_agreement(label_agreement_pairs)
-            quality_path = write_retrieval_quality(output_path, label_agreement_metrics)
+            similarity_metrics = compute_similarity_stats(similarity_scores)
+            combined_metrics = {**label_agreement_metrics, 'similarity_scores': similarity_metrics}
+            quality_path = write_retrieval_quality(output_path, combined_metrics)
             if label_agreement_metrics['agreement_rate'] is not None:
                 logger.info(
                     f"Retrieval label agreement: {label_agreement_metrics['agreement_rate']:.4f} "
                     f"over {label_agreement_metrics['total_demo_slots']} demo slots (query positive "
-                    f"rate {label_agreement_metrics['query_positive_rate']:.4f}) - saved to {quality_path}"
+                    f"rate {label_agreement_metrics['query_positive_rate']:.4f})"
                 )
             else:
-                logger.warning(f"No demo slots had both a query and demo label - saved empty metrics to {quality_path}")
+                logger.warning("No demo slots had both a query and demo label.")
+            if similarity_metrics['mean'] is not None:
+                logger.info(
+                    f"Retrieval similarity scores: mean={similarity_metrics['mean']:.4f} "
+                    f"median={similarity_metrics['median']:.4f} min={similarity_metrics['min']:.4f} "
+                    f"max={similarity_metrics['max']:.4f} over {similarity_metrics['count']} demo slots "
+                    f"- saved to {quality_path}"
+                )
+            else:
+                logger.warning(f"No similarity scores collected - saved available metrics to {quality_path}")
 
             # --- Sanity check: refuse to silently write a degenerate (near-)zero-shot dataset ---
             # This is the exact failure mode that let a stale cross-dataset embedding cache collision

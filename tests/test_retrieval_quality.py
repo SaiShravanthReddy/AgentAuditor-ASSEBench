@@ -1,9 +1,13 @@
 """Tests for retrieval_quality.py - the "% of retrieved demos sharing the query's true label"
-metric flagged as missing in results/PIPELINE_METRICS.md's `infer_emb` section.
+metric flagged as missing in results/PIPELINE_METRICS.md's `infer_emb` section, plus the raw
+content-similarity score distribution (previously computed by find_most_similar_two_stage() and
+discarded immediately after use).
 """
 import json
 
-from AgentAuditor.tasks.retrieval_quality import compute_label_agreement, write_retrieval_quality
+from AgentAuditor.tasks.retrieval_quality import (
+    compute_label_agreement, compute_similarity_stats, write_retrieval_quality,
+)
 
 
 class TestComputeLabelAgreement:
@@ -36,6 +40,33 @@ class TestComputeLabelAgreement:
         result = compute_label_agreement(pairs)
         assert result['agreement_rate'] == 1.0
         assert result['query_positive_rate'] == 0.1
+
+
+class TestComputeSimilarityStats:
+    def test_empty_scores_returns_none_fields_not_zeros(self):
+        """0.0 would misleadingly read as 'nothing was similar' rather than 'no data' - must be
+        distinguishable."""
+        result = compute_similarity_stats([])
+        assert result == {'count': 0, 'mean': None, 'min': None, 'max': None, 'median': None}
+
+    def test_basic_stats(self):
+        scores = [0.2, 0.4, 0.6, 0.8, 1.0]
+        result = compute_similarity_stats(scores)
+        assert result['count'] == 5
+        assert result['mean'] == 0.6
+        assert result['min'] == 0.2
+        assert result['max'] == 1.0
+        assert result['median'] == 0.6
+
+    def test_median_even_count_averages_middle_two(self):
+        scores = [0.1, 0.2, 0.3, 0.4]
+        result = compute_similarity_stats(scores)
+        assert result['median'] == 0.25
+
+    def test_single_score(self):
+        result = compute_similarity_stats([0.77])
+        assert result['count'] == 1
+        assert result['mean'] == result['min'] == result['max'] == result['median'] == 0.77
 
 
 class TestWriteRetrievalQuality:
