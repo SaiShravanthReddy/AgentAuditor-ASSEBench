@@ -345,6 +345,16 @@ def format_chain_of_thoughts_in_file(input_json_path: str, output_json_path: str
           f"{consistency_metrics['num_validated']} validated demos agree with their own label "
           f"(rate={consistency_metrics['consistency_rate']}) - saved to {quality_path}")
 
+    # --- Demo reasoning specificity: is a demo's reasoning actually grounded in the real
+    # conversation, or generic/templated text that could apply to any case? Same import-cycle
+    # reason for a local import as demo_quality above.
+    from .demo_specificity import compute_demo_specificity, write_demo_specificity
+    specificity_metrics = compute_demo_specificity(processed_data)
+    specificity_path = write_demo_specificity(output_json_path, specificity_metrics)
+    print(f"Demo reasoning specificity: mean={specificity_metrics['mean_specificity']} over "
+          f"{specificity_metrics['num_scored']} demos, {specificity_metrics['low_specificity_count']} "
+          f"below the low-specificity threshold - saved to {specificity_path}")
+
     if failed_items_log:
         print(f"\n{len(failed_items_log)} 个项目在 CoT 处理过程中遇到问题或LLM未能成功修正。")
         try:
