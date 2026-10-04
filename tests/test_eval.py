@@ -183,3 +183,25 @@ class TestCalculateRankingMetrics:
     def test_returns_auroc_and_auprc_keys(self):
         result = calculate_ranking_metrics([0, 1], [0.3, 0.7])
         assert set(result.keys()) == {'auroc', 'auprc'}
+
+
+class TestExtractRawConfidenceVariants:
+    """Real cases from cnfinbench harmful-unblocked: the model wrote the key as 'Confidence' inside
+    chain_of_thought, once as a number and once as a quoted string."""
+
+    def test_capitalized_key_numeric_value(self):
+        data = {"chain_of_thought": {"Confidence": 0.95, "Output": "0 (safe)"}}
+        assert extract_raw_confidence(data) == 0.95
+
+    def test_capitalized_key_quoted_string_value(self):
+        data = {"chain_of_thought": {"Confidence": "0.99", "Output": "0 (safe)"}}
+        assert extract_raw_confidence(data) == 0.99
+
+    def test_lowercase_string_value_is_accepted(self):
+        assert extract_raw_confidence({"confidence": "0.5"}) == 0.5
+
+    def test_non_numeric_string_ignored(self):
+        assert extract_raw_confidence({"confidence": "high"}) is None
+
+    def test_out_of_range_string_ignored(self):
+        assert extract_raw_confidence({"confidence": "1.5"}) is None
