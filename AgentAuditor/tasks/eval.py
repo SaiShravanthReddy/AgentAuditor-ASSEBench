@@ -134,13 +134,27 @@ def extract_raw_confidence(output_data: Any) -> Optional[float]:
     """
     if not isinstance(output_data, dict):
         return None
-    candidates = [output_data.get('confidence')]
+    candidates = [_find_confidence_key(output_data)]
     cot = output_data.get('chain_of_thought')
     if isinstance(cot, dict):
-        candidates.append(cot.get('confidence'))
+        candidates.append(_find_confidence_key(cot))
     for c in candidates:
+        if isinstance(c, str):
+            try:
+                c = float(c)
+            except ValueError:
+                continue
         if isinstance(c, (int, float)) and 0.0 <= c <= 1.0:
             return float(c)
+    return None
+
+
+def _find_confidence_key(d: Dict[str, Any]) -> Any:
+    """Models sometimes capitalize the key ('Confidence') or quote the number ('0.99'). Match the key
+    case-insensitively; leave value coercion to the caller."""
+    for k, v in d.items():
+        if isinstance(k, str) and k.strip().lower() == 'confidence':
+            return v
     return None
 
 
