@@ -41,4 +41,6 @@ cache/
 results/results_*.txt
 # Internal sponsor meeting decks - confidential, not meant for a public repo. Keep these local/shared
 # via Slack, not git.
-*.pptx
+*.pptx# Shared-drive exports (sponsor decks, transfers) - confidential, keep local
+*.zip
+*.xlsx
