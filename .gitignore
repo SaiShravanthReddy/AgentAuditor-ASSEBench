@@ -45,3 +45,7 @@ results/results_*.txt
 # Shared-drive exports (sponsor decks, transfers) - confidential, keep local
 *.zip
 *.xlsx
+
+# Other teams' unpublished results (kept local, not shared)
+results/CNFINBENCH_DATASET_AND_RUN_METRICS_REPORT.md
+results/FINVAULT_TRACES_METRICS_NOTE.md
