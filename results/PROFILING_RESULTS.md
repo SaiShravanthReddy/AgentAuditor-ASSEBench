@@ -41,6 +41,11 @@ class imbalance.
 
 ⚠️ = incomplete data, see the note above.
 
+`cnfinbench-harmful` `20b` coverage 278/321: 42 records missing from API failures, plus 1
+(`harmful-MT_Inter-48`) that the judge could not process (a refusal-only input with no usable
+verdict or confidence). That one is excluded rather than re-run alone, so every scored record
+comes from the same run.
+
 ### Reading these results
 
 - **120b beats 20b almost everywhere, most dramatically on Q2**: recall 41.3%→80.0%, AUROC

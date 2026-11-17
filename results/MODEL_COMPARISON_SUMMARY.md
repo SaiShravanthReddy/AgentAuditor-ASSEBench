@@ -37,6 +37,11 @@ records missing from API failures during a high-contention batch run at time of 
 | `cnfinbench-harmless-unblocked` | Harmless, guardrail-filtered | 20b⚠️ | 88.3% | −0.7 | 25.0% | 3.2% | 5.7% | 0.550 | 0.132 | 281/281 |
 | `cnfinbench-harmless-unblocked` | Harmless-unblocked | 120b | 74.1% | **−14.3** | 13.6% | 22.9% | 17.0% | 0.566 | 0.139 | 301/301 |
 
+`cnfinbench-harmful` `20b` coverage 278/321: 42 records missing from API failures, plus 1
+(`harmful-MT_Inter-48`) that the judge could not process (a refusal-only input with no usable
+verdict or confidence). That one is excluded rather than re-run alone, so every scored record
+comes from the same run.
+
 
 ## Why: 120b learned a real pattern, and over-applies it
 
