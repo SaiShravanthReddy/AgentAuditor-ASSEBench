@@ -279,7 +279,8 @@ def process_json_file(input_file: str, intermediate_file: str, output_file: str,
 
         # Clean up intermediate file
         try:
-            import os
+            # os is imported at module level; a local `import os` here would make os local to
+            # this whole function and crash the earlier os.path.dirname call (UnboundLocalError)
             os.remove(intermediate_file)
             print(f"Intermediate file {intermediate_file} has been removed")
         except OSError as e:
