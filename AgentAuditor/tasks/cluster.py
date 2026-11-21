@@ -170,10 +170,12 @@ class WeightedDialogueClusterer:
                     embeddings_list.append(batch_embeddings.cpu().numpy())
 
                 except Exception as e:
-                    logger.error(f"Error encoding batch for {description} starting at index {i}: {e}", exc_info=True)
-                    error_shape = (len(processed_batch), self.matryoshka_dim if self.matryoshka_dim else self.model.get_sentence_embedding_dimension())
-                    logger.warning(f"Appending zero vectors for failed batch {i // batch_size + 1}/{total_batches}")
-                    embeddings_list.append(np.zeros(error_shape, dtype=np.float32))
+                    # Fail loudly. Substituting zero vectors used to let a broken embedding
+                    # model (e.g. transformers 5.x vs nomic's remote code) collapse FINCH to a
+                    # single cluster, and every later stage then ran on nothing without erroring.
+                    raise RuntimeError(f"Embedding failed for {description} batch starting at index {i}: {e}. "
+                                       f"Check the transformers / sentence-transformers versions "
+                                       f"(requirements.txt pins transformers<5).") from e
 
                 if (i // batch_size + 1) % (max(1, total_batches // 10)) == 0 or (i // batch_size + 1) == total_batches:
                      logger.info(f"Processed batch {i // batch_size + 1}/{total_batches} for {description}")
